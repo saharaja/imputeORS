@@ -413,7 +413,7 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
 #' each iteration.
 #'
 #' @param model.iterations Modeling results (output of iterateModelKFCVwSG(), 
-#' specifically <output>$model.iterations)
+#' specifically output$model.iterations)
 #' @return Collated predictions of each test fold, by iteration
 #' @export
 getTestFoldData <- function(model.iterations) {
@@ -546,21 +546,19 @@ blendModels <- function(model.results.soc2,model.results.soc3,convergence.predic
 
 
 # Determine neighbor counts
-neighbors <- vector()
-for (i in levels(iter4$upSOC3)) {
-  for (j in levels(iter4$characteristic)) {
-    x.temp <- nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & 
-                           (iter4$data_type_text=="CONSTANTLY" |
-                              iter4$data_type_text=="FREQUENTLY" |
-                              iter4$data_type_text=="OCCASIONALLY" |
-                              iter4$data_type_text=="SELDOM" |
-                              iter4$data_type_text=="NOT PRESENT"),])
-    if (x.temp!=0) {
-      neighbors <- c(neighbors,
-                     nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & iter4$data_type_text=="CONSTANTLY",]))
-    }
-  }
-}
-rm(x.temp)
-
-
+# neighbors <- vector()
+# for (i in levels(iter4$upSOC3)) {
+#   for (j in levels(iter4$characteristic)) {
+#     x.temp <- nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & 
+#                            (iter4$data_type_text=="CONSTANTLY" |
+#                               iter4$data_type_text=="FREQUENTLY" |
+#                               iter4$data_type_text=="OCCASIONALLY" |
+#                               iter4$data_type_text=="SELDOM" |
+#                               iter4$data_type_text=="NOT PRESENT"),])
+#     if (x.temp!=0) {
+#       neighbors <- c(neighbors,
+#                      nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & iter4$data_type_text=="CONSTANTLY",]))
+#     }
+#   }
+# }
+# rm(x.temp)

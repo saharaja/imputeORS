@@ -24,7 +24,7 @@ estBetaParams <- function(mu,var) {
 #'
 #' @param mu Mean of distribution
 #' @param stdev Variance (error) of distribution
-#' @param n Number of values to draw
+#' @param n Number of values to draw; default is 10
 #' @return A sample of size n
 #' @export
 stdErrMC<- function(mu,stdev,n=10){
@@ -57,7 +57,7 @@ stdErrMC<- function(mu,stdev,n=10){
 #' weights (output of getPredictors())
 #' @return Original input, with simulated data appended
 #' @export
-getPerturbed<-function(df){
+getSimulations <-function(df){
   inCount=0
   outCount=0
   rownames(df)=NULL

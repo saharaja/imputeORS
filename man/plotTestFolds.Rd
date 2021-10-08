@@ -7,7 +7,7 @@
 plotTestFolds(
   test.fold.data,
   plot.alpha,
-  n.rounds,
+  n.iter,
   reqcat.palette = c("black", "yellow", "cyan"),
   line.color = c("red"),
   titles = gsub("([a-z])([0-9])", "\\\\1 \\\\2", colnames(test.fold.data))
@@ -18,7 +18,7 @@ plotTestFolds(
 
 \item{plot.alpha}{Alpha (transparency) value to use for points}
 
-\item{n.rounds}{How many iterations are to be plotted}
+\item{n.iter}{How many iterations are to be plotted}
 
 \item{reqcat.palette}{A character vector specifying colors to use for each
 requirement category; defaults are black (ENV), yellow (PHY), and cyan (EDU)}
@@ -30,7 +30,7 @@ is red}
 default is the column names of test.fold.data}
 }
 \value{
-A plot object
+Produces a plot (.png file)
 }
 \description{
 DETAILED DESCRIPTION

@@ -20,4 +20,13 @@ Imports:
     dplyr,
     tidyr,
     forcats,
-    reshape
+    reshape,
+    Matrix,
+    xgboost,
+    caret,
+    ModelMetrics,
+    ggplot2,
+    ggpubr,
+    RColorBrewer,
+    ComplexHeatmap,
+    circlize

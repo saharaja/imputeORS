@@ -11,7 +11,7 @@ stdErrMC(mu, stdev, n = 10)
 
 \item{stdev}{Variance (error) of distribution}
 
-\item{n}{Number of values to draw}
+\item{n}{Number of values to draw; default is 10}
 }
 \value{
 A sample of size n

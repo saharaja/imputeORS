@@ -456,21 +456,21 @@ getTestFoldData <- function(model.iterations) {
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
 #' @param plot.alpha Alpha (transparency) value to use for points
-#' @param n.rounds How many iterations are to be plotted
+#' @param n.iter How many iterations are to be plotted
 #' @param reqcat.palette A character vector specifying colors to use for each 
 #' requirement category; defaults are black (ENV), yellow (PHY), and cyan (EDU)
 #' @param line.color A string specifying color to use for the line y=x; default 
 #' is red
 #' @param titles A character vector specifying the titles of each subplot; 
 #' default is the column names of test.fold.data
-#' @return A plot object
+#' @return Produces a plot (.png file)
 #' @export
-plotTestFolds <- function(test.fold.data,plot.alpha,n.rounds,
+plotTestFolds <- function(test.fold.data,plot.alpha,n.iter,
                           reqcat.palette=c("black","yellow","cyan"),
                           line.color=c("red"),
                           titles=gsub("([a-z])([0-9])","\\1 \\2",colnames(test.fold.data))) {
 
-  test.fold.data <- test.fold.data[,c(1:(n.rounds+3))]
+  test.fold.data <- test.fold.data[,c(1:(n.iter+3))]
   reqcat.labels <- c("Environmental conditions","Physical demands","Education, training, and experience")
 
   plts <- list()
@@ -484,13 +484,13 @@ plotTestFolds <- function(test.fold.data,plot.alpha,n.rounds,
       labs(title=paste(titles[i],"vs. Actual")) + xlab(titles[i]) + ylab("Actual") +
       geom_abline(intercept=0,slope=1,color=line.color) + theme(legend.position="bottom")
   }
-  
   # return(plts)
   
   plots.grid <- ggpubr::ggarrange(plotlist=plts,nrow=ceiling(length(plts)/2),ncol=2,labels="auto",
-                                  common.legend=TRUE,legend="bottom")
-
-  return(plots.grid)
+                                  legend.grob=get_legend(plts[[1]]),legend="bottom")
+  # return(plots.grid)
+  
+  ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
 }
 
 
@@ -500,19 +500,19 @@ plotTestFolds <- function(test.fold.data,plot.alpha,n.rounds,
 #'
 #' @param model.results.soc2
 #' @param model.results.soc3
-#' @param convergence.prediction.number
+#' @param convergence.iteration
 #' @return 
 #' @export
-blendModels <- function(model.results.soc2,model.results.soc3,convergence.prediction.number) {
+blendModels <- function(model.results.soc2,model.results.soc3,convergence.iteration) {
   test.folds.soc2 <- getTestFoldData(model.results.soc2$model.iterations)
   test.folds.soc3 <- getTestFoldData(model.results.soc3$model.iterations)
-  conv.pred <- paste("Prediction",convergence.prediction.number,sep="")
+  conv.iter.label <- paste("Prediction",convergence.iteration,sep="")
 
   # Blending ratio
   blending.ratios <- vector()
   for (i in seq(0,1,0.01)) {
-    lin.com <- (i*test.folds.soc2[rownames(test.folds.soc2),conv.pred]) + 
-      ((1-i)*test.folds.soc3[rownames(test.folds.soc2),conv.pred])
+    lin.com <- (i*test.folds.soc2[rownames(test.folds.soc2),conv.iter.label]) + 
+      ((1-i)*test.folds.soc3[rownames(test.folds.soc2),conv.iter.label])
     blending.ratios <- c(blending.ratios,rmse(test.folds.soc2$actual,lin.com))
   }
   rm(lin.com)
@@ -526,7 +526,7 @@ blendModels <- function(model.results.soc2,model.results.soc3,convergence.predic
     geom_point(aes(color=color),alpha=0.5) + scale_color_manual(values=c("grey50","red")) + 
     labs(title="RMSE of blended predictions (at convergence)") + theme_bw() + theme(legend.position="none") + 
     scale_x_continuous("SOC2 model contribution",sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
-  ggsave(paste("kfcv-blended-rmse-iter",convergence.prediction.number,".png",sep=""),p.blend,width=6,height=3.75)
+  ggsave(paste("kfcv-blended-rmse-iter",convergence.iteration,".png",sep=""),p.blend,width=6,height=3.75)
   
   soc2.prop <- blending.ratios[blending.ratios$color==1,"SOC2.contribution"]
   soc3.prop <- blending.ratios[blending.ratios$color==1,"SOC3.contribution"]

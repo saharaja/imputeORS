@@ -4,11 +4,7 @@
 \alias{blendModels}
 \title{Compute model blending ratio}
 \usage{
-blendModels(
-  model.results.soc2,
-  model.results.soc3,
-  convergence.prediction.number
-)
+blendModels(model.results.soc2, model.results.soc3, convergence.iteration)
 }
 \value{
 

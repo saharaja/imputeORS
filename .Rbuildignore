@@ -1,0 +1,5 @@
+^.gitignore$
+^README.md$
+^individual_function_files$
+^test$
+^test_functions.R$

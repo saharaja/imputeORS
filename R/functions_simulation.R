@@ -30,7 +30,7 @@ estBetaParams <- function(mu,var) {
 stdErrMC<- function(mu,stdev,n=10){
   betaCoefs=estBetaParams(mu,stdev*stdev)
   sample=rbeta(n,betaCoefs$alpha,betaCoefs$beta)
-  sample=sample*stdev/sd(sample)
+  sample=sample*stdev/stats::sd(sample)
   sample=sample-mean(sample)+mu
   # if(anyNA(sample)){
   #          print(mu)
@@ -61,7 +61,7 @@ getSimulations <-function(df){
   inCount=0
   outCount=0
   rownames(df)=NULL
-  # sampledVals=df[,c("occupation_text","additive_group","characteristic","frequency","intensity","value","std.error")]
+  # sampledVals=df[,c("occupation_text","additive_group","requirement","frequency","intensity","value","std.error")]
   sampledVals <- df
   sampledVals[,c("valsim1","valsim2","valsim3","valsim4","valsim5",
                  "valsim6","valsim7","valsim8","valsim9","valsim10")] <- NA
@@ -117,11 +117,11 @@ getSimulations <-function(df){
       print(head(sampledVals))
       print(mainsample)
       sampledVals[agData$occupation_text[iMax]==sampledVals$occupation_text &
-                    agData$characteristic[iMax]==sampledVals$characteristic &
+                    agData$requirement[iMax]==sampledVals$requirement &
                     agData$frequency[iMax]==sampledVals$frequency &
                     agData$intensity[iMax]==sampledVals$intensity &
-                    agData$additive_group[iMax]==sampledVals$additive_group
-                  ,c((ncol(sampledVals)-9):ncol(sampledVals))]=t(mainsample[1:10])
+                    agData$additive_group[iMax]==sampledVals$additive_group,
+                  c((ncol(sampledVals)-9):ncol(sampledVals))]=t(mainsample[1:10])
 
       #print(mainsample)
       
@@ -141,7 +141,7 @@ getSimulations <-function(df){
           if(any(smallpop<0)){print(mainsample);print(smallpop);print(val2);print(val);stop()}
           
           sampledVals[agData$occupation_text[j]==sampledVals$occupation_text &
-                        agData$characteristic[j]==sampledVals$characteristic &
+                        agData$requirement[j]==sampledVals$requirement &
                         agData$frequency[j]==sampledVals$frequency &
                         agData$intensity[j]==sampledVals$intensity &
                         agData$additive_group[j]==sampledVals$additive_group

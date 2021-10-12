@@ -173,7 +173,7 @@ otherMissingObservations <- function(blsC) {
   
   # Append new observations to data
   blsC <- rbind(blsC,new.obs)
-  blsC <- distinct(blsC)
+  blsC <- dplyr::distinct(blsC)
   rm(new.obs)
   return(blsC)
 }
@@ -401,8 +401,8 @@ errorsAndBounding <- function(blsE,blsMnGC) {
   lb1 <- apply(cbind(blsMnGC$value - blsMnGC$std.error,rep(0,nrow(blsMnGC))),1,max)
   ub2 <- blsMnGC$pct.remaining
   lb2 <- blsMnGC$pct.remaining - blsMnGC$pct.remaining    # keeps NAs for known values for coalescing step (below)
-  blsMnGC$upper_bound <- coalesce(ub1,ub2)
-  blsMnGC$lower_bound <- coalesce(lb1,lb2)
+  blsMnGC$upper_bound <- dplyr::coalesce(ub1,ub2)
+  blsMnGC$lower_bound <- dplyr::coalesce(lb1,lb2)
   rm(list=c("ub1","ub2","lb1","lb2"))
   
   return(blsMnGC)
@@ -422,7 +422,7 @@ errorsAndBounding <- function(blsE,blsMnGC) {
 #' fields are added to the data.
 #' 
 #' (3) Also added to the data are fields for SOC2, SOC3, and SOC4 codes, as well
-#' as a field for the relevant requirement category.
+#' as a field for the relevant Requirement Category.
 #' 
 #' (4) Generate an indicator column that differentiates between known estimates
 #' and missing estimates.
@@ -431,7 +431,10 @@ errorsAndBounding <- function(blsE,blsMnGC) {
 #' @param predictors.data A data frame with data/predictor mappings
 #' @return Data augmented with relevant predictors
 #' @export
-getPredictors <- function(blsMnGCe,predictors.data) {
+getPredictors <- function(blsMnGCe) {
+  # Get mapping for data/predictors
+  load("data/data_mapping_for_predictors.Rdata")  # loads predictor.data
+  
   # Format existing columns as necessary
   blsMnGCe$occupation_text <- as.factor(blsMnGCe$occupation_text)
   blsMnGCe$additive_group <- as.numeric(as.character(blsMnGCe$additive_group))
@@ -441,7 +444,7 @@ getPredictors <- function(blsMnGCe,predictors.data) {
   blsMnGCe$upSOC2 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,2))
   blsMnGCe$upSOC3 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,3))
   blsMnGCe$upSOC4 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,4))
-  blsMnGCe$characteristic <- NA
+  blsMnGCe$requirement <- NA
   blsMnGCe$frequency <- NA
   blsMnGCe$intensity <- NA
   blsMnGCe$req.cat <- NA
@@ -474,8 +477,8 @@ getPredictors <- function(blsMnGCe,predictors.data) {
         next
       }
       
-      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"characteristic"] <-
-        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"data_element_text_new"]
+      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"requirement"] <-
+        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Requirement"]
       blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"frequency"] <-
         predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Frequency"]
       blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"intensity"] <-
@@ -487,7 +490,7 @@ getPredictors <- function(blsMnGCe,predictors.data) {
   
   # Format new predictor columns as necessary
   blsMnGCe$additive_group <- as.factor(blsMnGCe$additive_group)
-  blsMnGCe$characteristic <- as.factor(blsMnGCe$characteristic)
+  blsMnGCe$requirement <- as.factor(blsMnGCe$requirement)
   blsMnGCe$req.cat <- as.factor(blsMnGCe$req.cat)
   
   # Final processing

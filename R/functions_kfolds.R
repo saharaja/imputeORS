@@ -1,11 +1,241 @@
 # Functions for k-folds cross validation
 
+
+#' Smart Guessing for k-folds CV
+#'
+#' DETAILED DESCRIPTION lord have mercy on my soul
+#'
+#' @param ors.data Data with "missing" estimates to populate with smart guesses
+#' @param original.ors.full Original data (all records, including both known and 
+#' missing estimates)
+#' @param sim.no Is the smart guessing being run on a simulation, or the 
+#' original value; default is original value
+#' @param wt.low Model weight to assign to low-confidence smart guesses; default
+#' is 0
+#' @param wt.mid Model weight to assign to mid-confidence smart guesses; default
+#' is 0.5
+#' @param wt.high Model weight to assign to high-confidence smart guesses; 
+#' default is 0.5
+#' @return Original data frame, with missing values filled in by smart guesses
+#' @export
+smartGuessKFCV <- function(ors.data,original.ors.full,sim.no="value",
+                           wt.low=0,wt.mid=0.5,wt.high=0.5) {
+  if(sim.no=="value") {
+    val.col <- sim.no
+  }
+  else if(is.numeric(sim.no)) {
+    val.col <- paste("valsim",sim.no,sep="")
+  }
+  
+  # Pre-populate known/missing values into prediction column
+  ors.data$prediction <- ors.data[,val.col]
+  
+  # Set missing value weights to minimum
+  ors.data[which(ors.data$known.val!=1),"weight"] <- wt.low
+  
+  # Column to flag predictions that are forced scaled/bounded on [0,1]
+  ors.data$sg.flag <- 0
+  
+  # Run smart guessing procedure
+  for (adg in levels(ors.data$additive_group)) {
+    best.pct <- -1
+    best.occ <- ""
+    best.dist <- NA
+    
+    # Identify best distribution(s)
+    cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
+    for (occ in levels(ors.data$occupation_text)) {
+      current.occ.group <- ors.data[as.character(ors.data$occupation_text)==occ
+                                    & as.character(ors.data$additive_group)==adg,]
+      known.pct <- sum(!is.na(current.occ.group[,val.col])) / nrow(current.occ.group)
+      
+      if (nrow(current.occ.group)==0) {
+        next
+      }
+      else if (known.pct > best.pct[1]) {
+        best.pct <- known.pct
+        best.occ <- occ
+        best.dist <- current.occ.group[,val.col]
+        names(best.dist) <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
+      }
+      else if (known.pct==best.pct[1]) {
+        best.pct <- c(best.pct,known.pct)
+        best.occ <- c(best.occ,occ)
+        best.dist <- NA
+      }
+    }
+    
+    # Average distribution (in case of equivalent best)
+    if (length(best.occ) > 1) {
+      print("*** Averaging over multiple best distributions...")
+      bocc.tab <- data.frame(matrix(nrow=nrow(current.occ.group),ncol=length(best.occ)),
+                             row.names=paste(current.occ.group$frequency,current.occ.group$intensity,sep="-"))
+      colnames(bocc.tab) <- best.occ
+      
+      for (bocc in best.occ) {
+        current.occ.group <- ors.data[as.character(ors.data$occupation_text)==bocc
+                                      & as.character(ors.data$additive_group)==adg,]
+        current.occ.group$to.sort <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
+        bocc.tab[current.occ.group$to.sort,bocc] <- current.occ.group[,val.col]
+      }
+      best.dist <- rowMeans(bocc.tab,na.rm=TRUE)
+      names(best.dist) <- rownames(bocc.tab)
+    }
+    best.dist[is.nan(best.dist)] <- NA
+    if(sum(best.dist,na.rm=TRUE) > 1) {
+      best.dist <- best.dist / sum(best.dist,na.rm=TRUE)
+    }
+    # print(best.dist)
+    
+    # Assign upper bounds and guesses by occupational group (OG)
+    for (occ in levels(ors.data$occupation_text)) {
+      current.occ.group <- ors.data[as.character(ors.data$occupation_text)==occ
+                                    & as.character(ors.data$additive_group)==adg,]
+      orig.occ.group <- original.ors.full[as.character(original.ors.full$occupation_text)==occ
+                                          & as.character(original.ors.full$additive_group)==adg,]
+      orig.levels <- nrow(orig.occ.group)
+      
+      if (nrow(current.occ.group)==0) {
+        next
+      }
+      
+      current.occ.group$to.sort <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
+      current.missing <- rownames(current.occ.group)[which(is.na(current.occ.group[,val.col]))]
+      
+      # Check that the current OG has missing values
+      if (length(current.missing)==0) {
+        next
+      }
+      
+      # Calculate remaining percentage - take into account distribution of original data
+      rem.pct <- length(current.missing) * ((1 - sum(current.occ.group[,val.col],na.rm=TRUE)) / (orig.levels-sum(!(is.na(current.occ.group[,val.col])))))
+      if(rem.pct < 0) {
+        rem.pct <- 0
+      }
+      
+      # Reassign bounds (and pct.remaining)
+      ors.data[current.missing,"upper_bound"] <- rem.pct
+      ors.data[current.missing,"lower_bound"] <- 0
+      ors.data[current.missing,"pct.remaining"] <- rem.pct
+      
+      # Check that there is remaining percentage to assign
+      if (rem.pct==0) {
+        ors.data[current.missing,"prediction"] <- 0
+        ors.data[current.missing,"weight"] <- wt.high
+        next
+      }
+      
+      # If there are values in the best distribution...
+      if (sum(!is.na(best.dist)) >= 1) {
+        
+        # Determine which (if any) levels overlap between best distribution and current OG
+        best.known <- names(best.dist)[which(!is.na(best.dist))]
+        current.known <- current.occ.group$to.sort[which(!is.na(current.occ.group[,val.col]))]
+        common.known <- intersect(best.known,current.known)
+        
+        # If there is overlap between best distribution and current OG..
+        if (length(common.known) > 0) {  # make sure there is overlap
+          # print(paste("Smart guessing for occupation: ",occ,sep=""))
+          
+          # Common values
+          c1 <- sum(best.dist[common.known],na.rm=TRUE)
+          nc1 <- sum(best.dist,na.rm=TRUE) - c1
+          c2 <- sum(current.occ.group[which(current.occ.group$to.sort %in% common.known),val.col],na.rm=TRUE)
+          nc2 <- sum(current.occ.group[,val.col],na.rm=TRUE) - c2
+          scaling.factor <- (1-c2) / (1-c1)
+          
+          # Levels of relevant missing values (those that violate boundary conditions)
+          nj2.levels <- rownames(current.occ.group)[which(current.occ.group$to.sort %in% best.known & !(current.occ.group$to.sort %in% current.known))]
+          jm2.levels <- rownames(current.occ.group)[which(!(current.occ.group$to.sort %in% best.known | current.occ.group$to.sort %in% current.known))]
+          
+          # Missing values
+          if (is.na(scaling.factor) | scaling.factor==Inf) {
+            nj2 <- 1 - sum(c2,nc2)
+            ors.data[c(nj2.levels,jm2.levels),"sg.flag"] <- 1
+            ors.data[c(nj2.levels,jm2.levels),"weight"] <- wt.mid
+          }
+          else if ((nc1 * scaling.factor) > (1 - sum(c2,nc2))) {
+            nj2 <- 1 - sum(c2,nc2)
+            ors.data[c(nj2.levels,jm2.levels),"sg.flag"] <- 1
+            ors.data[c(nj2.levels,jm2.levels),"weight"] <- wt.mid
+          }
+          else {
+            nj2 <- nc1 * scaling.factor
+            ors.data[c(nj2.levels,jm2.levels),"weight"] <- wt.high
+          }
+          jm2 <- 1 - sum(c2,nc2,nj2)
+          
+          # Populate smart guesses for relevant observations
+          if (length(nj2.levels) > 0 & length(jm2.levels) > 0) {
+            ors.data[nj2.levels,"prediction"] <- nj2 / length(nj2.levels)
+            ors.data[jm2.levels,"prediction"] <- jm2 / length(jm2.levels)
+          }
+          else if ((length(nj2.levels) > 0 & length(jm2.levels)==0)) {
+            ors.data[nj2.levels,"prediction"] <- rem.pct / length(nj2.levels)
+          }
+          else if ((length(nj2.levels)==0 & length(jm2.levels) > 0)) {
+            ors.data[jm2.levels,"prediction"] <- rem.pct / length(jm2.levels)
+          }
+          else {
+            next
+          }
+          
+          # Scale guesses to [0,1]
+          # if (sum(ors.data[rownames(current.occ.group),"prediction"])!=1) {
+          if (sum(ors.data[rownames(current.occ.group),"prediction"])>1) {
+            ors.data[current.missing,"prediction"] <- rem.pct * (ors.data[current.missing,"prediction"] / sum(ors.data[current.missing,"prediction"]))
+          }
+        }
+        
+        # If the current OG is an empty distribution (all NAs, i.e. special case of no overlap)...
+        else if (sum(is.na(current.occ.group[,val.col]))==nrow(current.occ.group)) {  # make sure the OG is empty
+          print(paste("Smart guessing for occupation: ",occ,sep=""))
+          
+          # Get observations that can take smart guesses/bounds (all)
+          smart.guess.labels <- current.occ.group[which(is.na(current.occ.group[,val.col])),"to.sort"]
+          
+          # Populate values from best distribution as smart guesses for current OG
+          ors.data[current.missing,"prediction"] <- best.dist[smart.guess.labels]
+          ors.data[current.missing,"weight"] <- wt.high
+          
+          # Generate naive guesses for the others, if necessary
+          # I.e. best distribution has some NAs, or current OG has observations not in best distribution
+          # Latter is the result of using only known values (and simulating missing)
+          if (sum(is.na(best.dist)) >= 1 | 
+              sum(is.na(ors.data[current.missing,"prediction"])) >= 1 ) {
+            naive.guess <- current.missing[which(is.na(ors.data[current.missing,"prediction"]))]
+            ors.data[naive.guess,"prediction"] <- (rem.pct/length(current.missing)) / length(naive.guess)
+          }
+        }
+        
+        # Otherwise (non-empty OG, but no overlap)...
+        else {
+          # Generate naive prediction
+          ors.data[current.missing,"prediction"] <- rem.pct / sum(is.na(current.occ.group[,val.col]))
+          ors.data[current.missing,"weight"] <- wt.low
+        }
+      }
+      
+      # If the best distribution is empty...
+      else {
+        # Generate naive prediction
+        ors.data[current.missing,"prediction"] <- rem.pct / sum(is.na(current.occ.group[,val.col]))
+        ors.data[current.missing,"weight"] <- wt.low
+      }
+    }
+  }
+  
+  return(ors.data)
+}
+
+
 #' K-folds CV with Smart Guessing
 #'
 #' DETAILED DESCRIPTION lord have mercy on my soul
 #'
-#' @param original.bls.full
-#' @param n.iter
+#' @param original.ors.full Original data (all records, including both known and 
+#' missing estimates)
+#' @param n.iter Number of times to adjust/iterate the model
 #' @param initial.guess.weight
 #' @param prediction.contribution
 #' @param guess.contribution
@@ -14,28 +244,29 @@
 #' @param mdl.n
 #' @param mdl.e
 #' @param fold.list
-#' @param sg.soc.code
+#' @param sg.soc.code SOC code to use for smart guessing, either "upSOC2", 
+#' "upSOC3", or "upSOC4"
 #' @return 
 #' @export
-iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
+iterateModelKFCVwSG <- function(original.ors.full,n.iter,initial.guess.weight,
                                 prediction.contribution,guess.contribution,weight.step,
                                 mdl.d,mdl.n,mdl.e,fold.list=NULL,sg.soc.code) {
   
   # Get known values only
-  original.bls.known <- original.bls.full[original.bls.full$known.val==1,]
+  original.ors.known <- original.ors.full[original.ors.full$known.val==1,]
   
   # Initialize list
   model.iterations <- list()
   
   # Get column names of predictors/response
   select.cols <- c("occupation_text","characteristic","frequency","intensity","req.cat","upSOC2","upSOC3","value")
-
-  for (iter in c(1:n.iter)) {
+  
+  for (iter in c(0:n.iter)) {
     print(paste("Iteration ",iter,"...",sep=""))
-    if(iter==1) {
+    if(iter==0) {
       
       if (is.null(fold.list)) {
-        cv.folds <- caret::createFolds(original.bls.known$upSOC3,k=10,list=TRUE) # Create folds
+        cv.folds <- caret::createFolds(original.ors.known$upSOC3,k=10,list=TRUE) # Create folds, balanced on SOC3 code
         print("Generating folds...")
       }
       else {
@@ -45,14 +276,14 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
       
       
       # 'dopar' will run this on multiple threads (change to just 'do' for synchronous runs)
-      cv.results <- foreach(fold=cv.folds,fold.num=icount(),.packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
+      cv.results <- foreach(fold=cv.folds,fold.num=icount(),.packages=c('Matrix','xgboost','ModelMetrics','imputeORS')) %dopar% {
         
-        original.bls.known$orig.value <- original.bls.known$value
-        original.bls.known$is.test <- 0
+        original.ors.known$orig.value <- original.ors.known$value
+        original.ors.known$is.test <- 0
         
         # Split data in to test/training folds
-        data.train <- droplevels(original.bls.known[-fold,]) # Get the opposite of the test observations to train on
-        data.test <- droplevels(original.bls.known[fold,])
+        data.train <- droplevels(original.ors.known[-fold,]) # Get the opposite of the test observations to train on
+        data.test <- droplevels(original.ors.known[fold,])
         data.test$value <- NA
         if (is.numeric(initial.guess.weight)) {
           data.test$weight <- initial.guess.weight
@@ -64,235 +295,12 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
         # Merge training and test sets back together
         data.train <- rbind(data.train,data.test)
         
-        
-        
-        # Smart guess test fold
-        smartGuessKFCV <- function(bls.data,bls.data.full,sim.no,wt.low,wt.mid,wt.high) {
-          if(sim.no=="value") {
-            bls.data <- bls.data[,c("occupation_text","additive_group","characteristic","frequency","intensity",
-                                    "data_element_text","data_type_text","upper_soc_code","upSOC2","upSOC3","upSOC4",
-                                    "req.cat","pct.remaining","std.error","value","weight",
-                                    "upper_bound","lower_bound","known.val")]
-          }
-          else if(is.numeric(sim.no)) {
-            sim.col <- paste("valsim",sim.no,sep="")
-            bls.data <- bls.data[,c("occupation_text","additive_group","characteristic","frequency","intensity",
-                                    "data_element_text","data_type_text","upper_soc_code","upSOC2","upSOC3","upSOC4",
-                                    "req.cat","pct.remaining","std.error",sim.col,"weight",
-                                    "upper_bound","lower_bound","known.val")]
-            colnames(bls.data) <- c("occupation_text","additive_group","characteristic","frequency","intensity",
-                                    "data_element_text","data_type_text","upper_soc_code","upSOC2","upSOC3","upSOC4",
-                                    "req.cat","pct.remaining","std.error","value","weight",
-                                    "upper_bound","lower_bound","known.val")
-          }
-          
-          # Pre-populate known/missing values into prediction column
-          bls.data$prediction <- bls.data$value
-          
-          # Set missing value weights to minimum
-          bls.data[which(bls.data$known.val!=1),"weight"] <- wt.low
-          
-          # Column to flag predictions that are forced scaled/bounded on [0,1]
-          bls.data$sg.flag <- 0
-          
-          # Run smart guessing procedure
-          for (adg in levels(bls.data$additive_group)) {
-            best.pct <- -1
-            best.occ <- ""
-            best.dist <- NA
-            
-            # Identify best distribution(s)
-            cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
-            for (occ in levels(bls.data$occupation_text)) {
-              current.occ.group <- bls.data[as.character(bls.data$occupation_text)==occ
-                                            & as.character(bls.data$additive_group)==adg,]
-              known.pct <- sum(!is.na(current.occ.group$value)) / nrow(current.occ.group)
-              
-              if (nrow(current.occ.group)==0) {
-                next
-              }
-              else if (known.pct > best.pct[1]) {
-                best.pct <- known.pct
-                best.occ <- occ
-                best.dist <- current.occ.group$value
-                names(best.dist) <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
-              }
-              else if (known.pct==best.pct[1]) {
-                best.pct <- c(best.pct,known.pct)
-                best.occ <- c(best.occ,occ)
-                best.dist <- NA
-              }
-            }
-            
-            # Average distribution (in case of equivalent best)
-            if (length(best.occ) > 1) {
-              print("*** Averaging over multiple best distributions...")
-              bocc.tab <- data.frame(matrix(nrow=nrow(current.occ.group),ncol=length(best.occ)),
-                                     row.names=paste(current.occ.group$frequency,current.occ.group$intensity,sep="-"))
-              colnames(bocc.tab) <- best.occ
-              
-              for (bocc in best.occ) {
-                current.occ.group <- bls.data[as.character(bls.data$occupation_text)==bocc
-                                              & as.character(bls.data$additive_group)==adg,]
-                current.occ.group$to.sort <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
-                bocc.tab[current.occ.group$to.sort,bocc] <- current.occ.group$value
-              }
-              best.dist <- rowMeans(bocc.tab,na.rm=TRUE)
-              names(best.dist) <- rownames(bocc.tab)
-            }
-            best.dist[is.nan(best.dist)] <- NA
-            if(sum(best.dist,na.rm=TRUE) > 1) {
-              best.dist <- best.dist / sum(best.dist,na.rm=TRUE)
-            }
-            # print(best.dist)
-            
-            # Assign upper bounds and guesses by occupational group (OG)
-            for (occ in levels(bls.data$occupation_text)) {
-              current.occ.group <- bls.data[as.character(bls.data$occupation_text)==occ
-                                            & as.character(bls.data$additive_group)==adg,]
-              orig.occ.group <- bls.data.full[as.character(bls.data.full$occupation_text)==occ
-                                              & as.character(bls.data.full$additive_group)==adg,]
-              orig.levels <- nrow(orig.occ.group)
-              
-              if (nrow(current.occ.group)==0) {
-                next
-              }
-              
-              current.occ.group$to.sort <- paste(current.occ.group$frequency,current.occ.group$intensity,sep="-")
-              current.missing <- rownames(current.occ.group)[which(is.na(current.occ.group$value))]
-              
-              # Check that the current OG has missing values
-              if (length(current.missing)==0) {
-                next
-              }
-              
-              # Calculate remaining percentage - take into account distribution of original data
-              rem.pct <- length(current.missing) * ((1 - sum(current.occ.group$value,na.rm=TRUE)) / (orig.levels-sum(!(is.na(current.occ.group$value)))))
-              if(rem.pct < 0) {
-                rem.pct <- 0
-              }
-              
-              # Reassign bounds (and pct.remaining)
-              bls.data[current.missing,"upper_bound"] <- rem.pct
-              bls.data[current.missing,"lower_bound"] <- 0
-              bls.data[current.missing,"pct.remaining"] <- rem.pct
-              
-              # Check that there is remaining percentage to assign
-              if (rem.pct==0) {
-                bls.data[current.missing,"prediction"] <- 0
-                bls.data[current.missing,"weight"] <- wt.high
-                next
-              }
-              
-              # If there are values in the best distribution...
-              if (sum(!is.na(best.dist)) >= 1) {
-                
-                # Determine which (if any) levels overlap between best distribution and current OG
-                best.known <- names(best.dist)[which(!is.na(best.dist))]
-                current.known <- current.occ.group$to.sort[which(!is.na(current.occ.group$value))]
-                common.known <- intersect(best.known,current.known)
-                
-                # If there is overlap between best distribution and current OG..
-                if (length(common.known) > 0) {  # make sure there is overlap
-                  # print(paste("Smart guessing for occupation: ",occ,sep=""))
-                  
-                  # Common values
-                  c1 <- sum(best.dist[common.known],na.rm=TRUE)
-                  nc1 <- sum(best.dist,na.rm=TRUE) - c1
-                  c2 <- sum(current.occ.group[which(current.occ.group$to.sort %in% common.known),"value"],na.rm=TRUE)
-                  nc2 <- sum(current.occ.group[,"value"],na.rm=TRUE) - c2
-                  scaling.factor <- (1-c2) / (1-c1)
-                  
-                  # Levels of relevant missing values (those that violate boundary conditions)
-                  nj2.levels <- rownames(current.occ.group)[which(current.occ.group$to.sort %in% best.known & !(current.occ.group$to.sort %in% current.known))]
-                  jm2.levels <- rownames(current.occ.group)[which(!(current.occ.group$to.sort %in% best.known | current.occ.group$to.sort %in% current.known))]
-                  
-                  # Missing values
-                  if (is.na(scaling.factor) | scaling.factor==Inf) {
-                    nj2 <- 1 - sum(c2,nc2)
-                    bls.data[c(nj2.levels,jm2.levels),"sg.flag"] <- 1
-                    bls.data[c(nj2.levels,jm2.levels),"weight"] <- wt.mid
-                  }
-                  else if ((nc1 * scaling.factor) > (1 - sum(c2,nc2))) {
-                    nj2 <- 1 - sum(c2,nc2)
-                    bls.data[c(nj2.levels,jm2.levels),"sg.flag"] <- 1
-                    bls.data[c(nj2.levels,jm2.levels),"weight"] <- wt.mid
-                  }
-                  else {
-                    nj2 <- nc1 * scaling.factor
-                    bls.data[c(nj2.levels,jm2.levels),"weight"] <- wt.high
-                  }
-                  jm2 <- 1 - sum(c2,nc2,nj2)
-                  
-                  # Populate smart guesses for relevant observations
-                  if (length(nj2.levels) > 0 & length(jm2.levels) > 0) {
-                    bls.data[nj2.levels,"prediction"] <- nj2 / length(nj2.levels)
-                    bls.data[jm2.levels,"prediction"] <- jm2 / length(jm2.levels)
-                  }
-                  else if ((length(nj2.levels) > 0 & length(jm2.levels)==0)) {
-                    bls.data[nj2.levels,"prediction"] <- rem.pct / length(nj2.levels)
-                  }
-                  else if ((length(nj2.levels)==0 & length(jm2.levels) > 0)) {
-                    bls.data[jm2.levels,"prediction"] <- rem.pct / length(jm2.levels)
-                  }
-                  else {
-                    next
-                  }
-                  
-                  # Scale guesses to [0,1]
-                  # if (sum(bls.data[rownames(current.occ.group),"prediction"])!=1) {
-                  if (sum(bls.data[rownames(current.occ.group),"prediction"])>1) {
-                    bls.data[current.missing,"prediction"] <- rem.pct * (bls.data[current.missing,"prediction"] / sum(bls.data[current.missing,"prediction"]))
-                  }
-                }
-                
-                # If the current OG is an empty distribution (all NAs, i.e. special case of no overlap)...
-                else if (sum(is.na(current.occ.group$value))==nrow(current.occ.group)) {  # make sure the OG is empty
-                  print(paste("Smart guessing for occupation: ",occ,sep=""))
-                  
-                  # Get observations that can take smart guesses/bounds (all)
-                  smart.guess.labels <- current.occ.group[which(is.na(current.occ.group$value)),"to.sort"]
-                  
-                  # Populate values from best distribution as smart guesses for current OG
-                  bls.data[current.missing,"prediction"] <- best.dist[smart.guess.labels]
-                  bls.data[current.missing,"weight"] <- wt.high
-                  
-                  # Generate naive guesses for the others, if necessary
-                  # I.e. best distribution has some NAs, or current OG has observations not in best distribution
-                  # Latter is the result of using only known values (and simulating missing)
-                  if (sum(is.na(best.dist)) >= 1 | 
-                      sum(is.na(bls.data[current.missing,"prediction"])) >= 1 ) {
-                    naive.guess <- current.missing[which(is.na(bls.data[current.missing,"prediction"]))]
-                    bls.data[naive.guess,"prediction"] <- (rem.pct/length(current.missing)) / length(naive.guess)
-                  }
-                }
-                
-                # Otherwise (non-empty OG, but no overlap)...
-                else {
-                  # Generate naive prediction
-                  bls.data[current.missing,"prediction"] <- rem.pct / sum(is.na(current.occ.group$value))
-                  bls.data[current.missing,"weight"] <- wt.low
-                }
-              }
-              
-              # If the best distribution is empty...
-              else {
-                # Generate naive prediction
-                bls.data[current.missing,"prediction"] <- rem.pct / sum(is.na(current.occ.group$value))
-                bls.data[current.missing,"weight"] <- wt.low
-              }
-            }
-          }
-          
-          return(bls.data)
-        }
-        
+        # Separate observations by SOC2/3/4 code, and smart guess based on this distribution
         data.train.split <- list()
         for (i in levels(data.train[,sg.soc.code])) {
-          # Separate observations by SOC2/3/4 code
           data.train.split[[i]] <- droplevels(data.train[as.character(data.train[,sg.soc.code])==i,])
         }
-        data.train.smart <- lapply(data.train.split,smartGuessKFCV,original.bls.full,"value",wt.low=0,wt.mid=0.5,wt.high=0.5)
+        data.train.smart <- lapply(data.train.split,smartGuessKFCV,original.ors.full,"value",wt.low=0,wt.mid=0.5,wt.high=0.5)
         data.train.smart <- do.call(rbind,data.train.smart)
         
         rownames(data.train.smart) <- gsub("^[0-9][0-9]*\\.","",rownames(data.train.smart))
@@ -302,8 +310,6 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
         data.train <- data.train.smart[rownames(data.train),]
         data.train$value <- data.train$prediction
         data.train$prediction <- NULL
-        
-        
         
         # Make sure only true guesses have weight != 1
         data.train[which(data.train$value==data.train$orig.value),"weight"] <- 1
@@ -331,7 +337,7 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
       
     }
     else {
-      cv.results <- foreach(res=model.iterations[[iter-1]],fold.num=icount(),.packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
+      cv.results <- foreach(res=model.iterations[[iter-1]],fold.num=icount(),.packages=c('Matrix','xgboost','ModelMetrics','imputeORS')) %dopar% {
         
         # Get data from previous fit
         data.train <- res$data
@@ -345,7 +351,7 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
           data.train[which(data.train$weight<1 & data.train$weight>=0.75),"weight"] <- 0.75   # cap at 0.75
           data.train[data.train$weight==weight.step,"weight"] <- 0    # naive guesses get 0
         }
-
+        
         # Get previous predictions
         data.train$prev.pred <- res$results$pred
         
@@ -398,7 +404,7 @@ iterateModelKFCVwSG <- function(original.bls.full,n.iter,initial.guess.weight,
     }
   }
   
-  names(model.iterations) <- paste("iteration",c(1:n.iter),sep="")
+  names(model.iterations) <- paste("iteration",c(0:n.iter),sep="")
   return(list(folds=cv.folds,model.iterations=model.iterations))
 }
 

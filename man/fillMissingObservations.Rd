@@ -4,10 +4,10 @@
 \alias{fillMissingObservations}
 \title{Generate missing observations}
 \usage{
-fillMissingObservations(bls)
+fillMissingObservations(ors)
 }
 \arguments{
-\item{bls}{Data frame of relevant observations (output of syntheticAddGroups())}
+\item{ors}{Data frame of relevant observations (output of syntheticAddGroups())}
 }
 \value{
 Data with newly generated observations added (completed data)

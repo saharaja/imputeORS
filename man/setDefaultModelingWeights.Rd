@@ -4,10 +4,10 @@
 \alias{setDefaultModelingWeights}
 \title{Assign default modeling weights}
 \usage{
-setDefaultModelingWeights(bls.data)
+setDefaultModelingWeights(ors.data)
 }
 \arguments{
-\item{bls.data}{Data augmented with relevant predictors (output of
+\item{ors.data}{Data augmented with relevant predictors (output of
 getPredictors())}
 }
 \value{

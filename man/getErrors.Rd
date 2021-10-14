@@ -4,10 +4,10 @@
 \alias{getErrors}
 \title{Get standard error estimates}
 \usage{
-getErrors(blsC)
+getErrors(orsC)
 }
 \arguments{
-\item{blsC}{Completed, corrected data (output of dataCorrections())}
+\item{orsC}{Completed, corrected data (output of dataCorrections())}
 }
 \value{
 Standard error estimates only

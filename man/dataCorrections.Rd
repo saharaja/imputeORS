@@ -4,10 +4,10 @@
 \alias{dataCorrections}
 \title{Make corrections to data}
 \usage{
-dataCorrections(blsC)
+dataCorrections(orsC)
 }
 \arguments{
-\item{blsC}{Completed data (output of fillMissingObservations(), or
+\item{orsC}{Completed data (output of fillMissingObservations(), or
 otherMissingObservations())}
 }
 \value{

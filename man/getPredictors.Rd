@@ -4,12 +4,10 @@
 \alias{getPredictors}
 \title{Populate predictors based on data mapping}
 \usage{
-getPredictors(blsMnGCe, predictors.data)
+getPredictors(orsMnGCe)
 }
 \arguments{
-\item{blsMnGCe}{Data with errors and bounds (output of errorsAndBounding())}
-
-\item{predictors.data}{A data frame with data/predictor mappings}
+\item{orsMnGCe}{Data with errors and bounds (output of errorsAndBounding())}
 }
 \value{
 Data augmented with relevant predictors
@@ -27,7 +25,7 @@ significant reduction in dimension. This mapping is applied here, and the new
 fields are added to the data.
 
 (3) Also added to the data are fields for SOC2, SOC3, and SOC4 codes, as well
-as a field for the relevant requirement category.
+as a field for the relevant Requirement Category.
 
 (4) Generate an indicator column that differentiates between known estimates
 and missing estimates.

@@ -5,12 +5,12 @@
 \title{Assign errors to known mean estimates, and bounds for all estimates (known
 and unknown)}
 \usage{
-errorsAndBounding(blsE, blsMnGC)
+errorsAndBounding(orsE, orsMnGC)
 }
 \arguments{
-\item{blsE}{Errors associated with mean estimates (output of getErrors())}
+\item{orsE}{Errors associated with mean estimates (output of getErrors())}
 
-\item{blsMnGC}{N-1 group completed data (output of fillNminusOneGroups())}
+\item{orsMnGC}{N-1 group completed data (output of fillNminusOneGroups())}
 }
 \value{
 Data with relevant errors and bounds assigned to each record

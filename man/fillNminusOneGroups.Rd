@@ -4,10 +4,10 @@
 \alias{fillNminusOneGroups}
 \title{Calculate mean estimates for N-1 groups}
 \usage{
-fillNminusOneGroups(blsMnC)
+fillNminusOneGroups(orsMnC)
 }
 \arguments{
-\item{blsMnC}{Mean estimates (output of getMeanEstimates())}
+\item{orsMnC}{Mean estimates (output of getMeanEstimates())}
 }
 \value{
 N-1 group completed data

@@ -10,36 +10,36 @@
 #' 91) Pre-employment training: Educational Certificate
 #' 78) Sitting or standing/walking
 #'
-#' @param blsRaw Original data (read in from CSV file)
+#' @param orsRaw Original data (read in from CSV file)
 #' @return Data edited for new additive groups, and containing only relevant
 #' records (mean and standard error estimates) and columns
 #' @export
-syntheticAddGroups <- function(blsRaw) {
+syntheticAddGroups <- function(orsRaw) {
   
-  blsRaw[which(blsRaw$data_element_text=="Literacy required" &
-                 (blsRaw$data_type_text=="YES" | blsRaw$data_type_text=="NO") &
-                 blsRaw$estimate_type=="Percent"),"additive_group"] <- 11
-  blsRaw[which(blsRaw$data_element_text=="Pre-employment training: Certification" &
-                 (blsRaw$data_type_text=="YES" | blsRaw$data_type_text=="NO") &
-                 blsRaw$estimate_type=="Percent"),"additive_group"] <- 89
-  blsRaw[which(blsRaw$data_element_text=="Pre-employment training: License" &
-                 (blsRaw$data_type_text=="YES" | blsRaw$data_type_text=="NO") &
-                 blsRaw$estimate_type=="Percent"),"additive_group"] <- 90
-  blsRaw[which(blsRaw$data_element_text=="Pre-employment training: Educational Certificate" &
-                 (blsRaw$data_type_text=="YES" | blsRaw$data_type_text=="NO") &
-                 blsRaw$estimate_type=="Percent"),"additive_group"] <- 91
+  orsRaw[which(orsRaw$data_element_text=="Literacy required" &
+                 (orsRaw$data_type_text=="YES" | orsRaw$data_type_text=="NO") &
+                 orsRaw$estimate_type=="Percent"),"additive_group"] <- 11
+  orsRaw[which(orsRaw$data_element_text=="Pre-employment training: Certification" &
+                 (orsRaw$data_type_text=="YES" | orsRaw$data_type_text=="NO") &
+                 orsRaw$estimate_type=="Percent"),"additive_group"] <- 89
+  orsRaw[which(orsRaw$data_element_text=="Pre-employment training: License" &
+                 (orsRaw$data_type_text=="YES" | orsRaw$data_type_text=="NO") &
+                 orsRaw$estimate_type=="Percent"),"additive_group"] <- 90
+  orsRaw[which(orsRaw$data_element_text=="Pre-employment training: Educational Certificate" &
+                 (orsRaw$data_type_text=="YES" | orsRaw$data_type_text=="NO") &
+                 orsRaw$estimate_type=="Percent"),"additive_group"] <- 91
   
   # In original analysis we used '100' for the new additive group
   # '100' is actually already taken by 'Pace: Pause Control' (a COG requirement)
   # Instead for the package we use '78', i.e. the reference group of 'Sitting'
-  blsRaw[(blsRaw$data_element_text=="Sitting" | blsRaw$data_element_text=="Standing/walking") &
-           blsRaw$unit_of_measure=="Percent of day" & blsRaw$estimate_type=="Mean","additive_group"] <- 78
+  orsRaw[(orsRaw$data_element_text=="Sitting" | orsRaw$data_element_text=="Standing/walking") &
+           orsRaw$unit_of_measure=="Percent of day" & orsRaw$estimate_type=="Mean","additive_group"] <- 78
   
   # Select only required observations and columns
-  bls <- blsRaw[!is.na(blsRaw$additive_group),c("occupation_text","upper_soc_code","data_element_text",
+  ors <- orsRaw[!is.na(orsRaw$additive_group),c("occupation_text","upper_soc_code","data_element_text",
                                                 "data_type_text","estimate_type_text","additive_group","value")]
   
-  return(bls)
+  return(ors)
 }
 
 
@@ -49,21 +49,21 @@ syntheticAddGroups <- function(blsRaw) {
 #' estimate) are generated here.
 #' This is done by "completing" the data using tidyr::complete.
 #'
-#' @param bls Data frame of relevant observations (output of syntheticAddGroups())
+#' @param ors Data frame of relevant observations (output of syntheticAddGroups())
 #' @return Data with newly generated observations added (completed data)
 #' @export
-fillMissingObservations <- function(bls) {
-  blsC = bls%>% tidyr::complete(occupation_text,nesting(data_type_text,additive_group,
-                                                 estimate_type_text,data_element_text))
+fillMissingObservations <- function(ors) {
+  orsC = ors%>% tidyr::complete(occupation_text,nesting(data_type_text,additive_group,
+                                                        estimate_type_text,data_element_text))
   
-  for (occ in unique(blsC$occupation_text)) {    # fill in upper SOC code for new observations
-    usoc <- as.numeric(names(table(blsC[blsC$occupation_text==occ,"upper_soc_code"])))
+  for (occ in unique(orsC$occupation_text)) {    # fill in upper SOC code for new observations
+    usoc <- as.numeric(names(table(orsC[orsC$occupation_text==occ,"upper_soc_code"])))
     if (length(usoc)==1) {
-      blsC[blsC$occupation_text==occ,"upper_soc_code"] <- usoc
+      orsC[orsC$occupation_text==occ,"upper_soc_code"] <- usoc
     }
   }
   
-  return(blsC)
+  return(orsC)
 }
 
 
@@ -81,21 +81,21 @@ fillMissingObservations <- function(bls) {
 #' Kneeling is missing: CONSTANTLY, FREQUENTLY
 #' Crawling is missing: CONSTANTLY, FREQUENTLY
 #'
-#' @param blsC Completed data (output of fillMissingObservations())
+#' @param orsC Completed data (output of fillMissingObservations())
 #' @return Completed data, with requested requirement/levels added
 #' @export
-otherMissingObservations <- function(blsC) {
+otherMissingObservations <- function(orsC) {
   # Humidity
-  hu <- droplevels(blsC[which(blsC$data_element_text=="Humidity" &
-                                blsC$data_type_text=="NOT PRESENT"),])
+  hu <- droplevels(orsC[which(orsC$data_element_text=="Humidity" &
+                                orsC$data_type_text=="NOT PRESENT"),])
   hu$data_type_text <- "CONSTANTLY"
   hu$value <- NA
   new.obs <- hu
   rm(hu)
   
   # Heavy vibrations
-  hv <- droplevels(blsC[which(blsC$data_element_text=="Heavy vibrations" &
-                                blsC$data_type_text=="NOT PRESENT"),])
+  hv <- droplevels(orsC[which(orsC$data_element_text=="Heavy vibrations" &
+                                orsC$data_type_text=="NOT PRESENT"),])
   hv$data_type_text <- "CONSTANTLY"
   hv$value <- NA
   new.obs <- rbind(new.obs,hv)
@@ -108,8 +108,8 @@ otherMissingObservations <- function(blsC) {
   rm(hv)
   
   # Extreme cold
-  ec <- droplevels(blsC[which(blsC$data_element_text=="Extreme cold" &
-                                blsC$data_type_text=="NOT PRESENT"),])
+  ec <- droplevels(orsC[which(orsC$data_element_text=="Extreme cold" &
+                                orsC$data_type_text=="NOT PRESENT"),])
   ec$data_type_text <- "CONSTANTLY"
   ec$value <- NA
   new.obs <- rbind(new.obs,ec)
@@ -119,8 +119,8 @@ otherMissingObservations <- function(blsC) {
   rm(ec)
   
   # Climbing ladders, ropes, or scaffolds
-  cl <- droplevels(blsC[which(blsC$data_element_text=="Climbing ladders, ropes, or scaffolds" &
-                                blsC$data_type_text=="NOT PRESENT"),])
+  cl <- droplevels(orsC[which(orsC$data_element_text=="Climbing ladders, ropes, or scaffolds" &
+                                orsC$data_type_text=="NOT PRESENT"),])
   cl$data_type_text <- "CONSTANTLY"
   cl$value <- NA
   new.obs <- rbind(new.obs,cl)
@@ -130,8 +130,8 @@ otherMissingObservations <- function(blsC) {
   rm(cl)
   
   # Climbing ramps or stairs (work-related)
-  cr <- droplevels(blsC[which(blsC$data_element_text=="Climbing ramps or stairs (work-related)" &
-                                blsC$data_type_text=="NOT PRESENT"),])
+  cr <- droplevels(orsC[which(orsC$data_element_text=="Climbing ramps or stairs (work-related)" &
+                                orsC$data_type_text=="NOT PRESENT"),])
   cr$data_type_text <- "CONSTANTLY"
   cr$value <- NA
   new.obs <- rbind(new.obs,cr)
@@ -141,16 +141,16 @@ otherMissingObservations <- function(blsC) {
   rm(cr)
   
   # Stooping
-  stooping <- droplevels(blsC[which(blsC$data_element_text=="Stooping" &
-                                      blsC$data_type_text=="NOT PRESENT"),])
+  stooping <- droplevels(orsC[which(orsC$data_element_text=="Stooping" &
+                                      orsC$data_type_text=="NOT PRESENT"),])
   stooping$data_type_text <- "CONSTANTLY"
   stooping$value <- NA
   new.obs <- rbind(new.obs,stooping)
   rm(stooping)
   
   # Kneeling
-  kneeling <- droplevels(blsC[which(blsC$data_element_text=="Kneeling" &
-                                      blsC$data_type_text=="NOT PRESENT"),])
+  kneeling <- droplevels(orsC[which(orsC$data_element_text=="Kneeling" &
+                                      orsC$data_type_text=="NOT PRESENT"),])
   kneeling$data_type_text <- "CONSTANTLY"
   kneeling$value <- NA
   new.obs <- rbind(new.obs,kneeling)
@@ -160,8 +160,8 @@ otherMissingObservations <- function(blsC) {
   rm(kneeling)
   
   # Crawling
-  crawling <- droplevels(blsC[which(blsC$data_element_text=="Crawling" &
-                                      blsC$data_type_text=="NOT PRESENT"),])
+  crawling <- droplevels(orsC[which(orsC$data_element_text=="Crawling" &
+                                      orsC$data_type_text=="NOT PRESENT"),])
   crawling$data_type_text <- "CONSTANTLY"
   crawling$value <- NA
   new.obs <- rbind(new.obs,crawling)
@@ -172,10 +172,10 @@ otherMissingObservations <- function(blsC) {
   
   
   # Append new observations to data
-  blsC <- rbind(blsC,new.obs)
-  blsC <- dplyr::distinct(blsC)
+  orsC <- rbind(orsC,new.obs)
+  orsC <- dplyr::distinct(orsC)
   rm(new.obs)
-  return(blsC)
+  return(orsC)
 }
 
 
@@ -196,19 +196,19 @@ otherMissingObservations <- function(blsC) {
 #' 
 #' (4) Ensure that data is formatted as a data frame.
 #'
-#' @param blsC Completed data (output of fillMissingObservations(), or
+#' @param orsC Completed data (output of fillMissingObservations(), or
 #' otherMissingObservations())
 #' @return Data, updated with corrections
 #' @export
-dataCorrections <- function(blsC) {
+dataCorrections <- function(orsC) {
   # Data corrections
-  blsC$data_element_text <- gsub("hearing Test","hearing test",blsC$data_element_text)
-  blsC <- blsC[-which(blsC$data_type_text=="FULLY MITIGATED"),]
-  blsC[blsC$data_element_text=="Sitting","data_type_text"] <- "SIT"
-  blsC[blsC$data_element_text=="Standing/walking","data_type_text"] <- "STAND"
+  orsC$data_element_text <- gsub("hearing Test","hearing test",orsC$data_element_text)
+  orsC <- orsC[-which(orsC$data_type_text=="FULLY MITIGATED"),]
+  orsC[orsC$data_element_text=="Sitting","data_type_text"] <- "SIT"
+  orsC[orsC$data_element_text=="Standing/walking","data_type_text"] <- "STAND"
   
   # Formatting
-  blsC <- as.data.frame(blsC)
+  orsC <- as.data.frame(orsC)
 }
 
 
@@ -216,15 +216,15 @@ dataCorrections <- function(blsC) {
 #'
 #' Select only the mean estimates from the data.
 #'
-#' @param blsC Completed, corrected data (output of dataCorrections())
+#' @param orsC Completed, corrected data (output of dataCorrections())
 #' @return Mean estimates only
 #' @export
-getMeanEstimates <- function(blsC) {
-  blsMnC <- blsC[blsC$estimate_type_text=="Estimate",c("occupation_text","upper_soc_code","data_element_text",
+getMeanEstimates <- function(orsC) {
+  orsMnC <- orsC[orsC$estimate_type_text=="Estimate",c("occupation_text","upper_soc_code","data_element_text",
                                                        "data_type_text","additive_group","value")]
-  blsMnC <- blsMnC[order(blsMnC$additive_group),][order(blsMnC$occupation_text),] # reorder data
+  orsMnC <- orsMnC[order(orsMnC$additive_group),][order(orsMnC$occupation_text),] # reorder data
   
-  return(blsMnC)
+  return(orsMnC)
 }
 
 
@@ -232,16 +232,16 @@ getMeanEstimates <- function(blsC) {
 #'
 #' Select only the standard error estimates from the data.
 #'
-#' @param blsC Completed, corrected data (output of dataCorrections())
+#' @param orsC Completed, corrected data (output of dataCorrections())
 #' @return Standard error estimates only
 #' @export
-getErrors <- function(blsC) {
-  blsE <- blsC[blsC$estimate_type_text=="Standard error",c("occupation_text","upper_soc_code",
+getErrors <- function(orsC) {
+  orsE <- orsC[orsC$estimate_type_text=="Standard error",c("occupation_text","upper_soc_code",
                                                            "data_element_text","data_type_text",
                                                            "additive_group","value")]
-  blsE <- blsE[order(blsE$additive_group),][order(blsE$occupation_text),] # reorder data
+  orsE <- orsE[order(orsE$additive_group),][order(orsE$occupation_text),] # reorder data
   
-  return(blsE)
+  return(orsE)
 }
 
 
@@ -254,19 +254,19 @@ getErrors <- function(blsC) {
 #' estimates, then the final one can be calculated. This is because the total
 #' value of any occupational group must be 100%.
 #'
-#' @param blsMnC Mean estimates (output of getMeanEstimates())
+#' @param orsMnC Mean estimates (output of getMeanEstimates())
 #' @return N-1 group completed data
 #' @export
-fillNminusOneGroups <- function(blsMnC) {
-  yes.no <- droplevels(blsMnC[blsMnC$data_type_text=="YES" | blsMnC$data_type_text=="NO",])
+fillNminusOneGroups <- function(orsMnC) {
+  yes.no <- droplevels(orsMnC[orsMnC$data_type_text=="YES" | orsMnC$data_type_text=="NO",])
   
-  present.not <- droplevels(blsMnC[((blsMnC$data_type_text=="PRESENT" | 
-                                       blsMnC$data_type_text=="SELDOM" | 
-                                       blsMnC$data_type_text=="OCCASIONALLY" | 
-                                       blsMnC$data_type_text=="FREQUENTLY" | 
-                                       blsMnC$data_type_text=="CONSTANTLY" | 
-                                       blsMnC$data_type_text=="NOT PRESENT") & 
-                                      !is.na(blsMnC$additive_group)),])
+  present.not <- droplevels(orsMnC[((orsMnC$data_type_text=="PRESENT" | 
+                                       orsMnC$data_type_text=="SELDOM" | 
+                                       orsMnC$data_type_text=="OCCASIONALLY" | 
+                                       orsMnC$data_type_text=="FREQUENTLY" | 
+                                       orsMnC$data_type_text=="CONSTANTLY" | 
+                                       orsMnC$data_type_text=="NOT PRESENT") & 
+                                      !is.na(orsMnC$additive_group)),])
   
   yn.addGroups <- unique(yes.no$additive_group)
   yn.occupations <- unique(yes.no$occupation_text)
@@ -279,7 +279,7 @@ fillNminusOneGroups <- function(blsMnC) {
   
   for (ag in yn.addGroups) {
     for (oc in yn.occupations) {
-      est.sum <- sum(blsMnC[blsMnC$additive_group==ag & blsMnC$occupation_text==oc,"value"],na.rm=TRUE)
+      est.sum <- sum(orsMnC[orsMnC$additive_group==ag & orsMnC$occupation_text==oc,"value"],na.rm=TRUE)
       
       if (est.sum>100) {   # takes care of those whose values sum to > 100 (usually bc of rounding error)
         next
@@ -290,16 +290,16 @@ fillNminusOneGroups <- function(blsMnC) {
       }
       
       if (est.sum==100) {
-        to.replace <- which(blsMnC$additive_group==ag & blsMnC$occupation_text==oc & is.na(blsMnC$value))
+        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
         if (length(to.replace)>=1) {
-          blsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0 
+          orsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0 
         }
       }
       
       if (est.sum<100) {
-        to.replace <- which(blsMnC$additive_group==ag & blsMnC$occupation_text==oc & is.na(blsMnC$value))
+        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
         if(length(to.replace)==1) {
-          blsMnC[to.replace,"value"] <- 100 - est.sum
+          orsMnC[to.replace,"value"] <- 100 - est.sum
         }
       }
     }
@@ -307,7 +307,7 @@ fillNminusOneGroups <- function(blsMnC) {
   
   for (ag in pn.addGroups) {
     for (oc in pn.occupations) {
-      est.sum <- sum(blsMnC[blsMnC$additive_group==ag & blsMnC$occupation_text==oc,"value"],na.rm=TRUE)
+      est.sum <- sum(orsMnC[orsMnC$additive_group==ag & orsMnC$occupation_text==oc,"value"],na.rm=TRUE)
       
       if (est.sum>100) {   # takes care of those whose values sum to > 100 (usually bc of rounding error)
         next
@@ -318,25 +318,25 @@ fillNminusOneGroups <- function(blsMnC) {
       }
       
       if (est.sum==100) {
-        to.replace <- which(blsMnC$additive_group==ag & blsMnC$occupation_text==oc & is.na(blsMnC$value))
+        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
         if (length(to.replace)>=1) {
-          blsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0
+          orsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0
         }
       }
       
       if (est.sum<100) {
-        to.replace <- which(blsMnC$additive_group==ag & blsMnC$occupation_text==oc & is.na(blsMnC$value))
+        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
         if(length(to.replace)==1) {
-          blsMnC[to.replace,"value"] <- 100 - est.sum
+          orsMnC[to.replace,"value"] <- 100 - est.sum
         }
       }
     }
   }
   
-  blsMnGC <- blsMnC
-  rm(blsMnC)
+  orsMnGC <- orsMnC
+  rm(orsMnC)
   
-  return(blsMnGC)
+  return(orsMnGC)
 }
 
 
@@ -350,62 +350,62 @@ fillNminusOneGroups <- function(blsMnC) {
 #' occupational group, of which two estimates are known and sum to X%, the upper
 #' bound of the missing estimate is 100%-X%, and the lower bound is 0%.
 #'
-#' @param blsE Errors associated with mean estimates (output of getErrors())
-#' @param blsMnGC N-1 group completed data (output of fillNminusOneGroups())
+#' @param orsE Errors associated with mean estimates (output of getErrors())
+#' @param orsMnGC N-1 group completed data (output of fillNminusOneGroups())
 #' @return Data with relevant errors and bounds assigned to each record
 #' @export
-errorsAndBounding <- function(blsE,blsMnGC) {
+errorsAndBounding <- function(orsE,orsMnGC) {
   # Recall from the footnotes that:
   # stderr == -5 ==> stderr < 0.05
   # stderr == -6 ==> stderr < 0.5
   # estimate == -1 ==> estimate < 0.5
-  blsE[which(blsE$value==-5),"value"] <- 0.05
-  blsE[which(blsE$value==-6),"value"] <- 0.50
-  blsMnGC[which(blsMnGC$value==-1),"value"] <- 0
+  orsE[which(orsE$value==-5),"value"] <- 0.05
+  orsE[which(orsE$value==-6),"value"] <- 0.50
+  orsMnGC[which(orsMnGC$value==-1),"value"] <- 0
   
   # Format data for easier handling
-  blsE.names <- gsub(" ","",paste(blsE$occupation_text,blsE$additive_group,blsE$data_type_text))
-  rownames(blsE) <- blsE.names
-  blsMnGC.names <- gsub(" ","",paste(blsMnGC$occupation_text,blsMnGC$additive_group,blsMnGC$data_type_text))
-  rownames(blsMnGC) <- blsMnGC.names
+  orsE.names <- gsub(" ","",paste(orsE$occupation_text,orsE$additive_group,orsE$data_type_text))
+  rownames(orsE) <- orsE.names
+  orsMnGC.names <- gsub(" ","",paste(orsMnGC$occupation_text,orsMnGC$additive_group,orsMnGC$data_type_text))
+  rownames(orsMnGC) <- orsMnGC.names
   
-  # Assign blsE
-  blsMnGC$std.error <- NA
-  blsMnGC[blsE.names[which(blsE.names %in% blsMnGC.names)],"std.error"] <- blsE[blsE.names[which(blsE.names %in% blsMnGC.names)],"value"]
-  blsMnGC[!is.na(blsMnGC$value) & is.na(blsMnGC$std.error),"std.error"] <- 0  # set missing blsE to 0???
+  # Assign orsE
+  orsMnGC$std.error <- NA
+  orsMnGC[orsE.names[which(orsE.names %in% orsMnGC.names)],"std.error"] <- orsE[orsE.names[which(orsE.names %in% orsMnGC.names)],"value"]
+  orsMnGC[!is.na(orsMnGC$value) & is.na(orsMnGC$std.error),"std.error"] <- 0  # set missing orsE to 0???
   
   # Assign residual percentages
-  blsMnGC$pct.remaining <- NA
-  occ <- as.character(unique(blsMnGC$occupation_text))
-  adg <- unique(blsMnGC$additive_group)
+  orsMnGC$pct.remaining <- NA
+  occ <- as.character(unique(orsMnGC$occupation_text))
+  adg <- unique(orsMnGC$additive_group)
   for (i in occ) {
     #print(i)
     for (j in adg) {
       #print(j)
-      current.group <- blsMnGC[blsMnGC$occupation_text==i & blsMnGC$additive_group==j,]
+      current.group <- orsMnGC[orsMnGC$occupation_text==i & orsMnGC$additive_group==j,]
       resid.pct <- 100 - sum(current.group$value,na.rm=TRUE)
       current.group.resid <- current.group[which(is.na(current.group$value)),]
-      blsMnGC[rownames(current.group.resid),"pct.remaining"] <- resid.pct
+      orsMnGC[rownames(current.group.resid),"pct.remaining"] <- resid.pct
     }
   }
   
   # Reformat values as proportions of 1
-  blsMnGC$value <- blsMnGC$value/100
-  blsMnGC$std.error <- blsMnGC$std.error/100
-  blsMnGC$pct.remaining <- blsMnGC$pct.remaining/100
+  orsMnGC$value <- orsMnGC$value/100
+  orsMnGC$std.error <- orsMnGC$std.error/100
+  orsMnGC$pct.remaining <- orsMnGC$pct.remaining/100
   
   # Upper and lower bounds
-  blsMnGC$upper_bound <- NA
-  blsMnGC$lower_bound <- NA
-  ub1 <- apply(cbind(blsMnGC$value + blsMnGC$std.error,rep(1,nrow(blsMnGC))),1,min)
-  lb1 <- apply(cbind(blsMnGC$value - blsMnGC$std.error,rep(0,nrow(blsMnGC))),1,max)
-  ub2 <- blsMnGC$pct.remaining
-  lb2 <- blsMnGC$pct.remaining - blsMnGC$pct.remaining    # keeps NAs for known values for coalescing step (below)
-  blsMnGC$upper_bound <- dplyr::coalesce(ub1,ub2)
-  blsMnGC$lower_bound <- dplyr::coalesce(lb1,lb2)
+  orsMnGC$upper_bound <- NA
+  orsMnGC$lower_bound <- NA
+  ub1 <- apply(cbind(orsMnGC$value + orsMnGC$std.error,rep(1,nrow(orsMnGC))),1,min)
+  lb1 <- apply(cbind(orsMnGC$value - orsMnGC$std.error,rep(0,nrow(orsMnGC))),1,max)
+  ub2 <- orsMnGC$pct.remaining
+  lb2 <- orsMnGC$pct.remaining - orsMnGC$pct.remaining    # keeps NAs for known values for coalescing step (below)
+  orsMnGC$upper_bound <- dplyr::coalesce(ub1,ub2)
+  orsMnGC$lower_bound <- dplyr::coalesce(lb1,lb2)
   rm(list=c("ub1","ub2","lb1","lb2"))
   
-  return(blsMnGC)
+  return(orsMnGC)
 }
 
 
@@ -427,76 +427,75 @@ errorsAndBounding <- function(blsE,blsMnGC) {
 #' (4) Generate an indicator column that differentiates between known estimates
 #' and missing estimates.
 #'
-#' @param blsMnGCe Data with errors and bounds (output of errorsAndBounding())
-#' @param predictors.data A data frame with data/predictor mappings
+#' @param orsMnGCe Data with errors and bounds (output of errorsAndBounding())
 #' @return Data augmented with relevant predictors
 #' @export
-getPredictors <- function(blsMnGCe) {
+getPredictors <- function(orsMnGCe) {
   # Get mapping for data/predictors
-  load("data/data_mapping_for_predictors.Rdata")  # loads predictor.data
+  load("data/data_mapping_for_predictors.Rdata")  # loads predictors.data
   
   # Format existing columns as necessary
-  blsMnGCe$occupation_text <- as.factor(blsMnGCe$occupation_text)
-  blsMnGCe$additive_group <- as.numeric(as.character(blsMnGCe$additive_group))
-  blsMnGCe$data_type_text <- as.character(blsMnGCe$data_type_text)
+  orsMnGCe$occupation_text <- as.factor(orsMnGCe$occupation_text)
+  orsMnGCe$additive_group <- as.numeric(as.character(orsMnGCe$additive_group))
+  orsMnGCe$data_type_text <- as.character(orsMnGCe$data_type_text)
   
   # New predictor columns
-  blsMnGCe$upSOC2 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,2))
-  blsMnGCe$upSOC3 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,3))
-  blsMnGCe$upSOC4 <- as.factor(substr(blsMnGCe[,"upper_soc_code"],1,4))
-  blsMnGCe$requirement <- NA
-  blsMnGCe$frequency <- NA
-  blsMnGCe$intensity <- NA
-  blsMnGCe$req.cat <- NA
+  orsMnGCe$upSOC2 <- as.factor(substr(orsMnGCe[,"upper_soc_code"],1,2))
+  orsMnGCe$upSOC3 <- as.factor(substr(orsMnGCe[,"upper_soc_code"],1,3))
+  orsMnGCe$upSOC4 <- as.factor(substr(orsMnGCe[,"upper_soc_code"],1,4))
+  orsMnGCe$requirement <- NA
+  orsMnGCe$frequency <- NA
+  orsMnGCe$intensity <- NA
+  orsMnGCe$req.cat <- NA
   
   # Indicator column
-  blsMnGCe$known.val <- as.numeric(!is.na(blsMnGCe$value))
+  orsMnGCe$known.val <- as.numeric(!is.na(orsMnGCe$value))
   # Overwrite complete synthetic additive groups 11, 89, 90, 91 that don't sum to 1 (this is a known issue)
   for (adg in c("11","89","90","91")) {
-    for (occ in levels(blsMnGCe$occupation_text)) {
-      current.occ.group <- blsMnGCe[as.character(blsMnGCe$occupation_text)==occ
-                                    & as.character(blsMnGCe$additive_group)==adg,]
+    for (occ in levels(orsMnGCe$occupation_text)) {
+      current.occ.group <- orsMnGCe[as.character(orsMnGCe$occupation_text)==occ
+                                    & as.character(orsMnGCe$additive_group)==adg,]
       if(sum(current.occ.group$value,na.rm=TRUE)!=1 &
          sum(current.occ.group$known.val,na.rm=TRUE)==2) # these are all binary additive groups!
       {
-        blsMnGCe[rownames(current.occ.group),"known.val"] <- 2
+        orsMnGCe[rownames(current.occ.group),"known.val"] <- 2
       }
     }
   }
   
   # Assign predictors  
-  bls.addGroups <- unique(blsMnGCe$additive_group)
-  for (i in c(1:length(bls.addGroups))) {
-    dtt <- droplevels(predictors.data[predictors.data$additive_group==bls.addGroups[i],])$data_type_text
+  ors.addGroups <- unique(orsMnGCe$additive_group)
+  for (i in c(1:length(ors.addGroups))) {
+    dtt <- droplevels(predictors.data[predictors.data$additive_group==ors.addGroups[i],])$data_type_text
     for (j in c(1:length(dtt))) {
-      if(nrow(blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),])==0){
+      if(nrow(orsMnGCe[which(orsMnGCe$additive_group==ors.addGroups[i] & orsMnGCe$data_type_text==dtt[j]),])==0){
         next
       }
       
-      if(nrow(predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],])==0){
+      if(nrow(predictors.data[predictors.data$additive_group==ors.addGroups[i] & predictors.data$data_type_text==dtt[j],])==0){
         next
       }
       
-      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"requirement"] <-
-        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Requirement"]
-      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"frequency"] <-
-        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Frequency"]
-      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"intensity"] <-
-        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Intensity"]
-      blsMnGCe[which(blsMnGCe$additive_group==bls.addGroups[i] & blsMnGCe$data_type_text==dtt[j]),"req.cat"] <-
-        predictors.data[predictors.data$additive_group==bls.addGroups[i] & predictors.data$data_type_text==dtt[j],"Requirement_category"]
+      orsMnGCe[which(orsMnGCe$additive_group==ors.addGroups[i] & orsMnGCe$data_type_text==dtt[j]),"requirement"] <-
+        predictors.data[predictors.data$additive_group==ors.addGroups[i] & predictors.data$data_type_text==dtt[j],"Requirement"]
+      orsMnGCe[which(orsMnGCe$additive_group==ors.addGroups[i] & orsMnGCe$data_type_text==dtt[j]),"frequency"] <-
+        predictors.data[predictors.data$additive_group==ors.addGroups[i] & predictors.data$data_type_text==dtt[j],"Frequency"]
+      orsMnGCe[which(orsMnGCe$additive_group==ors.addGroups[i] & orsMnGCe$data_type_text==dtt[j]),"intensity"] <-
+        predictors.data[predictors.data$additive_group==ors.addGroups[i] & predictors.data$data_type_text==dtt[j],"Intensity"]
+      orsMnGCe[which(orsMnGCe$additive_group==ors.addGroups[i] & orsMnGCe$data_type_text==dtt[j]),"req.cat"] <-
+        predictors.data[predictors.data$additive_group==ors.addGroups[i] & predictors.data$data_type_text==dtt[j],"Requirement_category"]
     }
   }
   
   # Format new predictor columns as necessary
-  blsMnGCe$additive_group <- as.factor(blsMnGCe$additive_group)
-  blsMnGCe$requirement <- as.factor(blsMnGCe$requirement)
-  blsMnGCe$req.cat <- as.factor(blsMnGCe$req.cat)
+  orsMnGCe$additive_group <- as.factor(orsMnGCe$additive_group)
+  orsMnGCe$requirement <- as.factor(orsMnGCe$requirement)
+  orsMnGCe$req.cat <- as.factor(orsMnGCe$req.cat)
   
   # Final processing
-  bls.data <- blsMnGCe  
-  rm(blsMnGCe)
-  return(bls.data)
+  ors.data <- orsMnGCe  
+  rm(orsMnGCe)
+  return(ors.data)
 }
 
 
@@ -506,15 +505,15 @@ getPredictors <- function(blsMnGCe) {
 #' assigns default weights to records based on the presence/absence of a mean
 #' estimate.
 #'
-#' @param bls.data Data augmented with relevant predictors (output of 
+#' @param ors.data Data augmented with relevant predictors (output of 
 #' getPredictors())
 #' @return Data augmented with relevant predictors and default modeling weights
 #' @export
-setDefaultModelingWeights <- function(bls.data) {
+setDefaultModelingWeights <- function(ors.data) {
   # Assign default modeling weights based on indicator column
-  bls.data$weight <- bls.data$known.val
-  bls.data[bls.data$weight==0,"weight"] <- 0.5
-  bls.data[bls.data$weight==2,"weight"] <- 1
+  ors.data$weight <- ors.data$known.val
+  ors.data[ors.data$weight==0,"weight"] <- 0.5
+  ors.data[ors.data$weight==2,"weight"] <- 1
   
-  return(bls.data)
+  return(ors.data)
 }

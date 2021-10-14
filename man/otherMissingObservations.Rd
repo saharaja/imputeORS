@@ -4,10 +4,10 @@
 \alias{otherMissingObservations}
 \title{Generate additional (optional) missing observations}
 \usage{
-otherMissingObservations(blsC)
+otherMissingObservations(orsC)
 }
 \arguments{
-\item{blsC}{Completed data (output of fillMissingObservations())}
+\item{orsC}{Completed data (output of fillMissingObservations())}
 }
 \value{
 Completed data, with requested requirement/levels added

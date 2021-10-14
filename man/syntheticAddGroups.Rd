@@ -4,10 +4,10 @@
 \alias{syntheticAddGroups}
 \title{Generate synthetic additive groups}
 \usage{
-syntheticAddGroups(blsRaw)
+syntheticAddGroups(orsRaw)
 }
 \arguments{
-\item{blsRaw}{Original data (read in from CSV file)}
+\item{orsRaw}{Original data (read in from CSV file)}
 }
 \value{
 Data edited for new additive groups, and containing only relevant

@@ -4,10 +4,10 @@
 \alias{getMeanEstimates}
 \title{Get mean estimates}
 \usage{
-getMeanEstimates(blsC)
+getMeanEstimates(orsC)
 }
 \arguments{
-\item{blsC}{Completed, corrected data (output of dataCorrections())}
+\item{orsC}{Completed, corrected data (output of dataCorrections())}
 }
 \value{
 Mean estimates only

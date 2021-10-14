@@ -5,7 +5,7 @@
 \title{K-folds CV with Smart Guessing}
 \usage{
 iterateModelKFCVwSG(
-  original.bls.full,
+  original.ors.full,
   n.iter,
   initial.guess.weight,
   prediction.contribution,
@@ -17,6 +17,15 @@ iterateModelKFCVwSG(
   fold.list = NULL,
   sg.soc.code
 )
+}
+\arguments{
+\item{original.ors.full}{Original data (all records, including both known and
+missing estimates)}
+
+\item{n.iter}{Number of times to adjust/iterate the model}
+
+\item{sg.soc.code}{SOC code to use for smart guessing, either "upSOC2",
+"upSOC3", or "upSOC4"}
 }
 \value{
 

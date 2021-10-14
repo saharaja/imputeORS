@@ -67,7 +67,7 @@ getSimulations <-function(df){
                  "valsim6","valsim7","valsim8","valsim9","valsim10")] <- NA
   # print(head(sampledVals))
   
-  if (max(df$value)==1) {
+  if (max(df$value,na.rm=TRUE)==1) {
     df$value <- df$value*100
     df$std.error <- df$std.error*100
   }

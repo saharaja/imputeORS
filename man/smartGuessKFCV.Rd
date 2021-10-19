@@ -5,22 +5,20 @@
 \title{Smart Guessing for k-folds CV}
 \usage{
 smartGuessKFCV(
+  ors.data.for.sg,
   ors.data,
-  original.ors.full,
-  sim.no = "value",
   wt.low = 0,
   wt.mid = 0.5,
   wt.high = 0.5
 )
 }
 \arguments{
-\item{ors.data}{Data with "missing" estimates to populate with smart guesses}
+\item{ors.data.for.sg}{Data with "missing" estimates to populate with smart
+guesses}
 
-\item{original.ors.full}{Original data (all records, including both known and
-missing estimates)}
-
-\item{sim.no}{Is the smart guessing being run on a simulation, or the
-original value; default is original value}
+\item{ors.data}{Original data augmented with relevant predictors, i.e. all
+records, including both known and missing estimates (output of
+getPredictors(), or getSimulations())}
 
 \item{wt.low}{Model weight to assign to low-confidence smart guesses; default
 is 0}
@@ -32,7 +30,7 @@ is 0.5}
 default is 0.5}
 }
 \value{
-Original data frame, with missing values filled in by smart guesses
+Input data frame, with missing values filled in by smart guesses
 }
 \description{
 DETAILED DESCRIPTION lord have mercy on my soul

@@ -5,24 +5,34 @@
 \title{K-folds CV with Smart Guessing}
 \usage{
 iterateModelKFCVwSG(
-  original.ors.full,
+  ors.data,
   n.iter,
-  initial.guess.weight,
-  prediction.contribution,
-  guess.contribution,
   weight.step,
-  mdl.d,
-  mdl.n,
-  mdl.e,
+  mdl.d = 14,
+  mdl.n = 200,
+  mdl.e = 0.6,
   fold.list = NULL,
   sg.soc.code
 )
 }
 \arguments{
-\item{original.ors.full}{Original data (all records, including both known and
-missing estimates)}
+\item{ors.data}{Original data augmented with relevant predictors, i.e. all
+records, including both known and missing estimates (output of
+getPredictors(), or getSimulations())}
 
-\item{n.iter}{Number of times to adjust/iterate the model}
+\item{n.iter}{Number of times to iterate/adjust the model}
+
+\item{weight.step}{Increment by which to increase modeling weight of test
+fold data with each iteration}
+
+\item{mdl.d}{Tree model maximum depth; default is 14}
+
+\item{mdl.n}{Tree model rounds; default is 200}
+
+\item{mdl.e}{Tree model eta; default is 0.6}
+
+\item{fold.list}{A list of preset folds, if these have to be fixed across
+runs; default is to generate a new set of folds}
 
 \item{sg.soc.code}{SOC code to use for smart guessing, either "upSOC2",
 "upSOC3", or "upSOC4"}

@@ -6,9 +6,9 @@
 \usage{
 plotTestFolds(
   test.fold.data,
-  plot.alpha,
-  n.iter,
-  reqcat.palette = c("black", "yellow", "cyan"),
+  plot.alpha = 0.1,
+  n.iter = (ncol(test.fold.data) - 4),
+  reqcat.palette = c("palevioletred1", "black", "yellow", "cyan"),
   line.color = c("red"),
   titles = gsub("([a-z])([0-9])", "\\\\1 \\\\2", colnames(test.fold.data))
 )
@@ -16,12 +16,13 @@ plotTestFolds(
 \arguments{
 \item{test.fold.data}{Test fold predictions (output of getTestFoldData())}
 
-\item{plot.alpha}{Alpha (transparency) value to use for points}
+\item{plot.alpha}{Alpha (transparency) to use for points; default is 0.1}
 
-\item{n.iter}{How many iterations are to be plotted}
+\item{n.iter}{How many iterations are to be plotted; default is to plot all}
 
 \item{reqcat.palette}{A character vector specifying colors to use for each
-requirement category; defaults are black (ENV), yellow (PHY), and cyan (EDU)}
+requirement category; defaults are pink (COG), black (ENV), yellow (PHY), and
+cyan (EDU)}
 
 \item{line.color}{A string specifying color to use for the line y=x; default
 is red}

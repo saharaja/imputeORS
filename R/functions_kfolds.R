@@ -602,29 +602,29 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
 #' @return Collated predictions of each test fold, by iteration
 #' @export
 getTestFoldData <- function(model.iterations) {
-  
+  # Set up final data frame
   test.fold.data <- data.frame(fold=rep(NA,nrow(model.iterations[[1]][[1]]$data)),
                                req.cat=model.iterations[[1]][[1]]$data$req.cat,
-                               actual=model.iterations[[1]][[1]]$data$orig.value,
+                               actual=model.iterations[[1]][[1]]$data$value,
                                row.names=rownames(model.iterations[[1]][[1]]$data))
   
+  # By iteration...
   for(i in c(1:length(model.iterations))) {
     mi <- model.iterations[[i]]
-    
     current.iter <- as.data.frame(matrix(nrow=0,ncol=3))
+    
+    # By fold...
     for(j in c(1:length(mi))){
       ids <- rownames(mi[[j]]$data[mi[[j]]$data$is.test==1,])
       
-      # NOTE: "value" contains initial smart guess (iter0), along with subsequent adjusted predictions (iter1-n)
-      # NOTE: "prediction" contains raw predictions (pre-adjustment)
-      g <- mi[[j]]$data[ids,"value"]
-      # p <- mi[[j]]$results[ids,"pred"]
+      # NOTE: "value" contains actual value
+      # NOTE: "prediction" contains initial smart guess (iter0), along with subsequent adjusted predictions (iter1+)
+      p <- mi[[j]]$data[ids,"prediction"]
       f <- rep(j,length(ids))
       
-      # current.iter <- rbind(current.iter,data.frame(guess=g,predict=p,fold=f,row.names=ids))
-      current.iter <- rbind(current.iter,data.frame(guess=g,fold=f,row.names=ids))
-      
+      current.iter <- rbind(current.iter,data.frame(prediction=p,fold=f,row.names=ids))
     }
+    
     colnames(current.iter) <- paste(c("Prediction","fold"),(i-1),sep="")
     test.fold.data <- cbind(test.fold.data,current.iter[rownames(test.fold.data),])
     test.fold.data$fold <- test.fold.data[,ncol(test.fold.data)]
@@ -640,24 +640,31 @@ getTestFoldData <- function(model.iterations) {
 #' DETAILED DESCRIPTION
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
-#' @param plot.alpha Alpha (transparency) value to use for points
-#' @param n.iter How many iterations are to be plotted
+#' @param plot.alpha Alpha (transparency) to use for points; default is 0.1
+#' @param n.iter How many iterations are to be plotted; default is to plot all
 #' @param reqcat.palette A character vector specifying colors to use for each 
-#' requirement category; defaults are black (ENV), yellow (PHY), and cyan (EDU)
+#' requirement category; defaults are pink (COG), black (ENV), yellow (PHY), and
+#' cyan (EDU)
 #' @param line.color A string specifying color to use for the line y=x; default 
 #' is red
 #' @param titles A character vector specifying the titles of each subplot; 
 #' default is the column names of test.fold.data
 #' @return Produces a plot (.png file)
 #' @export
-plotTestFolds <- function(test.fold.data,plot.alpha,n.iter,
-                          reqcat.palette=c("black","yellow","cyan"),
+plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.data)-4),
+                          reqcat.palette=c("palevioletred1","black","yellow","cyan"),
                           line.color=c("red"),
                           titles=gsub("([a-z])([0-9])","\\1 \\2",colnames(test.fold.data))) {
 
-  test.fold.data <- test.fold.data[,c(1:(n.iter+3))]
-  reqcat.labels <- c("Environmental conditions","Physical demands","Education, training, and experience")
-
+  test.fold.data <- test.fold.data[,c(1:(n.iter+4))]
+  test.fold.data$req.cat <- as.character(test.fold.data$req.cat)
+  test.fold.data[test.fold.data$req.cat=="COG","req.cat"] <- "Cognitive and mental demands"
+  test.fold.data[test.fold.data$req.cat=="ENV","req.cat"] <- "Environmental conditions"
+  test.fold.data[test.fold.data$req.cat=="PHY","req.cat"] <- "Physical demands"
+  test.fold.data[test.fold.data$req.cat=="SVP","req.cat"] <- "Education, training, and experience"
+  test.fold.data$req.cat <- factor(test.fold.data$req.cat)
+  # c("Cognitive and mental","Environmental conditions","Physical demands","Education, training, and experience")
+  
   plts <- list()
   
   for(i in c(4:ncol(test.fold.data))) {
@@ -665,14 +672,19 @@ plotTestFolds <- function(test.fold.data,plot.alpha,n.iter,
     colnames(selected.cols) <- c("req.cat","actual","calculated")
     
     plts[[(i-3)]] <- ggplot(selected.cols) + geom_point(aes(x=calculated,y=actual,color=req.cat),alpha=plot.alpha) +
-      theme_bw() + scale_colour_manual(values=reqcat.palette,labels=reqcat.labels,name="") +
+      theme_bw() + scale_colour_manual(values=c("Cognitive and mental demands"=reqcat.palette[1],
+                                                "Environmental conditions"=reqcat.palette[2],
+                                                "Physical demands"=reqcat.palette[3],
+                                                "Education, training, and experience"=reqcat.palette[4]),name="") +
       labs(title=paste(titles[i],"vs. Actual")) + xlab(titles[i]) + ylab("Actual") +
       geom_abline(intercept=0,slope=1,color=line.color) + theme(legend.position="bottom")
   }
   # return(plts)
   
   plots.grid <- ggpubr::ggarrange(plotlist=plts,nrow=ceiling(length(plts)/2),ncol=2,labels="auto",
-                                  legend.grob=get_legend(plts[[1]]),legend="bottom")
+                                  #legend.grob=get_legend(plts[[1]]),
+                                  common.legend=TRUE,
+                                  legend="bottom")
   # return(plots.grid)
   
   ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))

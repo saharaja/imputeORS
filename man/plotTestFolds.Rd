@@ -18,7 +18,8 @@ plotTestFolds(
 
 \item{plot.alpha}{Alpha (transparency) to use for points; default is 0.1}
 
-\item{n.iter}{How many iterations are to be plotted; default is to plot all}
+\item{n.iter}{How many iterations are to be plotted; default is to plot all
+iterations, including Iteration 0 (smart guessing)}
 
 \item{reqcat.palette}{A character vector specifying colors to use for each
 requirement category; defaults are pink (COG), black (ENV), yellow (PHY), and
@@ -31,8 +32,11 @@ is red}
 default is the column names of test.fold.data}
 }
 \value{
-Produces a plot (.png file)
+Produces a plot (.png file) and returns a list of plot objects, with
+one object for each iteration
 }
 \description{
-DETAILED DESCRIPTION
+DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
+guessing (no modeling involved). Note that n.iter=10 will plot Iterations
+0-10, for a total of 11 iterations.
 }

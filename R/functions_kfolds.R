@@ -595,7 +595,8 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
 #' model is generated and iterated over each of these test folds. The
 #' predictions resulting from each test fold are combined for each iteration,
 #' such that there is a complete predicted dataset (all records) obtained from
-#' each iteration.
+#' each iteration. Recall that Iteration 0 is simply the output of smart
+#' guessing (no modeling involved).
 #'
 #' @param model.iterations Modeling results (output of iterateModelKFCVwSG(), 
 #' specifically output$model.iterations)
@@ -635,13 +636,56 @@ getTestFoldData <- function(model.iterations) {
 }
 
 
+#' Compute convergence iteration
+#'
+#' DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
+#' guessing (no modeling involved).
+#'
+#' @param test.fold.data Test fold predictions (output of getTestFoldData())
+#' @return Convergence iteration of k-folds cross validation modeling
+#' @export
+computeConvergence <- function(test.fold.data) {
+  
+  rmse.by.iter <- vector()
+  for (i in c(1:(ncol(test.fold.data)-3))) {
+    rmse.by.iter <- c(rmse.by.iter,rmse(test.fold.data[,"actual"],test.fold.data[,i+3]))
+  }
+  names(rmse.by.iter) <- paste("Prediction",c(0:(length(rmse.by.iter)-1)),sep="")
+  
+  i <- 0  # start at 0 to maintain consistency with iteration numbering (0-n)
+  d <- 1
+  while (d >= 0.001 & i < (length(rmse.by.iter)-1)) {
+    d <- rmse.by.iter[i+1] - rmse.by.iter[i+2]
+    i <- i+1
+  }
+  
+  cat("RMSE by iteration:\n")
+  print(rmse.by.iter)
+  cat("\nDifferences in RMSE:\n")
+  cat(rmse.by.iter[1:(length(rmse.by.iter)-1)]-rmse.by.iter[2:length(rmse.by.iter)])
+  cat("\n\n")
+  plot(0:(length(rmse.by.iter)-1),rmse.by.iter,xlab="Iteration",ylab="RMSE (prediction vs. actual)")
+  
+  if (d >= 0.001) {
+    cat("Convergence criteria unmet, returning final iteration\n")
+    return(i)
+  }
+  else {
+    return(i-1)
+  }
+}
+
+
 #' Plot predicted vs. actual values
 #'
-#' DETAILED DESCRIPTION
+#' DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
+#' guessing (no modeling involved). Note that n.iter=10 will plot Iterations 
+#' 0-10, for a total of 11 iterations.
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
 #' @param plot.alpha Alpha (transparency) to use for points; default is 0.1
 #' @param n.iter How many iterations are to be plotted; default is to plot all
+#' iterations, including Iteration 0 (smart guessing)
 #' @param reqcat.palette A character vector specifying colors to use for each 
 #' requirement category; defaults are pink (COG), black (ENV), yellow (PHY), and
 #' cyan (EDU)
@@ -649,7 +693,8 @@ getTestFoldData <- function(model.iterations) {
 #' is red
 #' @param titles A character vector specifying the titles of each subplot; 
 #' default is the column names of test.fold.data
-#' @return Produces a plot (.png file)
+#' @return Produces a plot (.png file) and returns a list of plot objects, with 
+#' one object for each iteration
 #' @export
 plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.data)-4),
                           reqcat.palette=c("palevioletred1","black","yellow","cyan"),
@@ -679,15 +724,15 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
       labs(title=paste(titles[i],"vs. Actual")) + xlab(titles[i]) + ylab("Actual") +
       geom_abline(intercept=0,slope=1,color=line.color) + theme(legend.position="bottom")
   }
-  # return(plts)
   
   plots.grid <- ggpubr::ggarrange(plotlist=plts,nrow=ceiling(length(plts)/2),ncol=2,labels="auto",
-                                  #legend.grob=get_legend(plts[[1]]),
-                                  common.legend=TRUE,
-                                  legend="bottom")
-  # return(plots.grid)
+                                  # legend.grob=get_legend(plts[[1]]),
+                                  # common.legend=TRUE,
+                                  legend="none")
   
   ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
+  return(plts)
+  # return(plots.grid)
 }
 
 

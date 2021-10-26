@@ -19,5 +19,6 @@ In the KFCV analysis, each of 10 folds is treated as the test fold, and a
 model is generated and iterated over each of these test folds. The
 predictions resulting from each test fold are combined for each iteration,
 such that there is a complete predicted dataset (all records) obtained from
-each iteration.
+each iteration. Recall that Iteration 0 is simply the output of smart
+guessing (no modeling involved).
 }

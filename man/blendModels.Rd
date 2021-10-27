@@ -4,11 +4,35 @@
 \alias{blendModels}
 \title{Compute model blending ratio}
 \usage{
-blendModels(model.results.soc2, model.results.soc3, convergence.iteration)
+blendModels(model.results.soc2, model.results.soc3, print.plot = TRUE)
+}
+\arguments{
+\item{model.results.soc2}{Modeling results of SOC2 smart guessed data (output
+of iterateModelKFCVwSG())}
+
+\item{model.results.soc3}{Modeling results of SOC3 smart guessed data (output
+of iterateModelKFCVwSG())}
+
+\item{print.plot}{Should plot file (.png) be generated; default is TRUE
+(create plot file)}
 }
 \value{
-
+A list of length 3, containing the contribution of model.results.soc2
+(as a proportion), the contribution of model.results.soc3, and the blended
+predictions of each iteration
 }
 \description{
-DETAILED DESCRIPTION
+Our procedure involves running the model twice over. In the first run, the
+initial smart guesses were computed based on separating the data based on
+their SOC2 codes. In the second run, the same was done using the SOC3 codes
+instead. This function computes a blending ratio, i.e. the contribution of
+each model to our final predictions. This is done by determining the
+convergence iteration of each model, then computing a weighted average of the
+relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The
+RMSE of these prediction weighted averages were then calculated. The weighted
+average that resulted in the lowest RMSE was selected to determine the
+blending ratio. For example, if the prediction weighted average of 0.45(run1)
+\itemize{
+\item 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
+}
 }

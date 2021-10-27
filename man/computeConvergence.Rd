@@ -4,10 +4,12 @@
 \alias{computeConvergence}
 \title{Compute convergence iteration}
 \usage{
-computeConvergence(test.fold.data)
+computeConvergence(test.fold.data, verbose = TRUE)
 }
 \arguments{
 \item{test.fold.data}{Test fold predictions (output of getTestFoldData())}
+
+\item{verbose}{Should messages be printed; default is TRUE (print messages)}
 }
 \value{
 Convergence iteration of k-folds cross validation modeling

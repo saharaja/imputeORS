@@ -642,9 +642,10 @@ getTestFoldData <- function(model.iterations) {
 #' guessing (no modeling involved).
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
+#' @param verbose Should messages be printed; default is TRUE (print messages)
 #' @return Convergence iteration of k-folds cross validation modeling
 #' @export
-computeConvergence <- function(test.fold.data) {
+computeConvergence <- function(test.fold.data,verbose=TRUE) {
   
   rmse.by.iter <- vector()
   for (i in c(1:(ncol(test.fold.data)-3))) {
@@ -659,11 +660,13 @@ computeConvergence <- function(test.fold.data) {
     i <- i+1
   }
   
-  cat("RMSE by iteration:\n")
-  print(rmse.by.iter)
-  cat("\nDifferences in RMSE:\n")
-  cat(rmse.by.iter[1:(length(rmse.by.iter)-1)]-rmse.by.iter[2:length(rmse.by.iter)])
-  cat("\n\n")
+  if (verbose) {
+    cat("RMSE by iteration:\n")
+    print(rmse.by.iter)
+    cat("\nDifferences in RMSE:\n")
+    cat(rmse.by.iter[1:(length(rmse.by.iter)-1)]-rmse.by.iter[2:length(rmse.by.iter)])
+    cat("\n\n")
+  }
   plot(0:(length(rmse.by.iter)-1),rmse.by.iter,xlab="Iteration",ylab="RMSE (prediction vs. actual)")
   
   if (d >= 0.001) {
@@ -693,13 +696,16 @@ computeConvergence <- function(test.fold.data) {
 #' is red
 #' @param titles A character vector specifying the titles of each subplot; 
 #' default is the column names of test.fold.data
-#' @return Produces a plot (.png file) and returns a list of plot objects, with 
-#' one object for each iteration
+#' @param print.plot Should plot file (.png) be generated; default is TRUE
+#' (create plot file)
+#' @return Returns a list of plot objects, with one object for each iteration; 
+#' optionally produces a plot (.png file)
 #' @export
 plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.data)-4),
                           reqcat.palette=c("palevioletred1","black","yellow","cyan"),
                           line.color=c("red"),
-                          titles=gsub("([a-z])([0-9])","\\1 \\2",colnames(test.fold.data))) {
+                          titles=gsub("([a-z])([0-9])","\\1 \\2",colnames(test.fold.data)),
+                          print.plot=TRUE) {
 
   test.fold.data <- test.fold.data[,c(1:(n.iter+4))]
   test.fold.data$req.cat <- as.character(test.fold.data$req.cat)
@@ -725,36 +731,63 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
       geom_abline(intercept=0,slope=1,color=line.color) + theme(legend.position="bottom")
   }
   
-  plots.grid <- ggpubr::ggarrange(plotlist=plts,nrow=ceiling(length(plts)/2),ncol=2,labels="auto",
-                                  # legend.grob=get_legend(plts[[1]]),
-                                  # common.legend=TRUE,
-                                  legend="none")
+  if (print.plot==TRUE) {
+    plots.grid <- ggpubr::ggarrange(plotlist=plts,nrow=ceiling(length(plts)/2),ncol=2,labels="auto",
+                                    # legend.grob=get_legend(plts[[1]]),
+                                    # common.legend=TRUE,
+                                    legend="none")
+    ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
+    # return(plots.grid)
+  }
   
-  ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
   return(plts)
-  # return(plots.grid)
 }
 
 
 #' Compute model blending ratio
 #'
-#' DETAILED DESCRIPTION
+#' Our procedure involves running the model twice over. In the first run, the
+#' initial smart guesses were computed based on separating the data based on
+#' their SOC2 codes. In the second run, the same was done using the SOC3 codes
+#' instead. This function computes a blending ratio, i.e. the contribution of
+#' each model to our final predictions. This is done by determining the 
+#' convergence iteration of each model, then computing a weighted average of the
+#' relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The 
+#' RMSE of these prediction weighted averages were then calculated. The weighted
+#' average that resulted in the lowest RMSE was selected to determine the
+#' blending ratio. For example, if the prediction weighted average of 0.45(run1)
+#' + 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
 #'
-#' @param model.results.soc2
-#' @param model.results.soc3
-#' @param convergence.iteration
-#' @return 
+#' @param model.results.soc2 Modeling results of SOC2 smart guessed data (output
+#' of iterateModelKFCVwSG())
+#' @param model.results.soc3 Modeling results of SOC3 smart guessed data (output
+#' of iterateModelKFCVwSG())
+#' @param print.plot Should plot file (.png) be generated; default is TRUE
+#' (create plot file)
+#' @return A list of length 3, containing the contribution of model.results.soc2
+#' (as a proportion), the contribution of model.results.soc3, and the blended
+#' predictions of each iteration
 #' @export
-blendModels <- function(model.results.soc2,model.results.soc3,convergence.iteration) {
+blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
+  # Get aggregated test fold data
   test.folds.soc2 <- getTestFoldData(model.results.soc2$model.iterations)
   test.folds.soc3 <- getTestFoldData(model.results.soc3$model.iterations)
-  conv.iter.label <- paste("Prediction",convergence.iteration,sep="")
-
+  
+  # Compute convergence iterations
+  cat("Computing convergence for model 1...\n\n")
+  conv.iter.soc2 <- computeConvergence(test.folds.soc2)
+  cat("Computing convergence for model 2...\n\n")
+  conv.iter.soc3 <- computeConvergence(test.folds.soc3)
+  cat(paste("Convergence iteration for model 1: ",conv.iter.soc2,"\n",sep=""))
+  cat(paste("Convergence iteration for model 2: ",conv.iter.soc3,"\n",sep=""))
+  conv.iter.soc2 <- paste("Prediction",conv.iter.soc2,sep="")
+  conv.iter.soc3 <- paste("Prediction",conv.iter.soc3,sep="")
+  
   # Blending ratio
   blending.ratios <- vector()
   for (i in seq(0,1,0.01)) {
-    lin.com <- (i*test.folds.soc2[rownames(test.folds.soc2),conv.iter.label]) + 
-      ((1-i)*test.folds.soc3[rownames(test.folds.soc2),conv.iter.label])
+    lin.com <- (i*test.folds.soc2[rownames(test.folds.soc2),conv.iter.soc2]) + 
+      ((1-i)*test.folds.soc3[rownames(test.folds.soc2),conv.iter.soc3])
     blending.ratios <- c(blending.ratios,rmse(test.folds.soc2$actual,lin.com))
   }
   rm(lin.com)
@@ -764,12 +797,17 @@ blendModels <- function(model.results.soc2,model.results.soc3,convergence.iterat
                                 color=0)
   blending.ratios[which.min(blending.ratios$RMSE),"color"] <- 1
   blending.ratios$color <- as.factor(blending.ratios$color)
-  p.blend <- ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
-    geom_point(aes(color=color),alpha=0.5) + scale_color_manual(values=c("grey50","red")) + 
-    labs(title="RMSE of blended predictions (at convergence)") + theme_bw() + theme(legend.position="none") + 
-    scale_x_continuous("SOC2 model contribution",sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
-  ggsave(paste("kfcv-blended-rmse-iter",convergence.iteration,".png",sep=""),p.blend,width=6,height=3.75)
   
+  # Plot
+  if (print.plot) {
+    p.blend <- ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
+      geom_point(aes(color=color),alpha=0.5) + scale_color_manual(values=c("grey50","red")) + 
+      labs(title="RMSE of blended predictions (at convergence)") + theme_bw() + theme(legend.position="none") + 
+      scale_x_continuous("SOC2 model contribution",sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
+    ggsave(paste("kfcv-blended-rmse.png",sep=""),p.blend,width=6,height=3.75)
+  }
+  
+  # Get proportions
   soc2.prop <- blending.ratios[blending.ratios$color==1,"SOC2.contribution"]
   soc3.prop <- blending.ratios[blending.ratios$color==1,"SOC3.contribution"]
   

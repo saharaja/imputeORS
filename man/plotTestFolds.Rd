@@ -10,7 +10,8 @@ plotTestFolds(
   n.iter = (ncol(test.fold.data) - 4),
   reqcat.palette = c("palevioletred1", "black", "yellow", "cyan"),
   line.color = c("red"),
-  titles = gsub("([a-z])([0-9])", "\\\\1 \\\\2", colnames(test.fold.data))
+  titles = gsub("([a-z])([0-9])", "\\\\1 \\\\2", colnames(test.fold.data)),
+  print.plot = TRUE
 )
 }
 \arguments{
@@ -30,10 +31,13 @@ is red}
 
 \item{titles}{A character vector specifying the titles of each subplot;
 default is the column names of test.fold.data}
+
+\item{print.plot}{Should plot file (.png) be generated; default is TRUE
+(create plot file)}
 }
 \value{
-Produces a plot (.png file) and returns a list of plot objects, with
-one object for each iteration
+Returns a list of plot objects, with one object for each iteration;
+optionally produces a plot (.png file)
 }
 \description{
 DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart

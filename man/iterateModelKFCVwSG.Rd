@@ -38,8 +38,14 @@ runs; default is to generate a new set of folds}
 "upSOC3", or "upSOC4"}
 }
 \value{
-
+A list of length 2, containing a list of hold out indices for each
+test fold, and the results of iterative modeling
 }
 \description{
-DETAILED DESCRIPTION lord have mercy on my soul
+Function to do k-folds cross validation in an iterative fashion. The first
+prediction (Iteration 0) is the result of the smart guessing procedure. All
+subsequent iterations rely on XGBoost to produce preliminary predictions.
+These predictions are then adjusted to adhere to boundary conditions on the
+data (all estimates must be in the range \link{0,1}, and the sum of all estimates
+within an occupational group must be <=1).
 }

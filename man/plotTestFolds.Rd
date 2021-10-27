@@ -40,7 +40,8 @@ Returns a list of plot objects, with one object for each iteration;
 optionally produces a plot (.png file)
 }
 \description{
-DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
-guessing (no modeling involved). Note that n.iter=10 will plot Iterations
-0-10, for a total of 11 iterations.
+For each iteration, plot the predicted values vs. actual values of
+observations in test folds. Recall that Iteration 0 is simply the output of
+smart guessing (no modeling involved). Note that n.iter=10 will plot
+Iterations 0-10, for a total of 11 iterations.
 }

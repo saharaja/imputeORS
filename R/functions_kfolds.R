@@ -3,7 +3,56 @@
 
 #' Smart Guessing for k-folds CV
 #'
-#' DETAILED DESCRIPTION lord have mercy on my soul
+#' Function to perform "smart guessing" procedure to generate initial guess for 
+#' iterative k-folds cross validation. This approach leverages some of the 
+#' structure built into the data. Namely, occupations within a given 2- or 
+#' 3-digit SOC group are similar in nature. Thus, it is reasonable to assume 
+#' that the requirements for the constituent occupations also follow similar 
+#' distributions. This function uses information from the other members of a 
+#' given SOC group to produce an initial guess for a particular occupation, and 
+#' is briefly described below.
+#'
+#' The following procedure is followed within each SOC group. Each requirement 
+#' is searched for an occupation with the "best" distribution, i.e. the job with
+#' the maximum number of known estimates. In cases where there are multiple such
+#' jobs, their requirement distributions are averaged to arrive at a single best
+#' distribution. Then, each job (within a given requirement) is compared to this
+#'  best distribution, and falls into one of three cases:
+#' 
+#' (1) Overlap between current job and the best distribution
+#' (2) No overlap between current job and the best distribution
+#' (3) Current job has no associated estimates (subset of case 2, above)
+#' 
+#' In the first case, missing estimates are populated as follows. A scaling 
+#' factor was first computed based on the overlapping observations in the 
+#' current job and the best distribution. This scaling factor is then multiplied
+#' by the sum total of the estimates associated with observations in the best 
+#' distribution that did not have counterparts in the current job, yielding some
+#'  value x. The value of x is then evenly distributed across all the 
+#' observations that were missing estimates in the current job, but had 
+#' estimates in the best distribution. Finally, the sum of all the values in the
+#' current job (both known, and guessed) is subtracted from 1, and this 
+#' remaining value is evenly distributed across any outstanding observations in
+#' the current job.
+#' 
+#' In the second case, the missing estimates are simply populated with the naive
+#' guess for their value. For example, if the known estimates in the current job
+#' sum to 0.8, and there are two observations with missing estimates, each one 
+#' is given a value of 0.2 / 2 = 0.1. 
+#' 
+#' In the third case, the observations in the current job whose counterparts 
+#' have known estimates in the best distribution simply receive the value of the
+#' counterpart's estimate. The remaining estimates are populated using the naive
+#' approach described in case 2.
+#' 
+#' The above procedure is completed per requirement, per SOC group. All guesses
+#' are then adjusted to adhere to boundary conditions on the data (all estimates
+#' must be in the range [0,1], and the sum of all estimates within an 
+#' occupational group must be <=1). Note that the modeling weights associated 
+#' with guessed values are altered based on which of the three cases they fall 
+#' into, with those falling in cases 1 and 3 receiving higher weights, and those
+#' falling in case 2 receiving lower weights. These weights are used in the 
+#' iterative modeling step.
 #'
 #' @param ors.data.for.sg Data with "missing" estimates to populate with smart 
 #' guesses
@@ -225,7 +274,12 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 
 #' K-folds CV with Smart Guessing
 #'
-#' DETAILED DESCRIPTION lord have mercy on my soul
+#' Function to do k-folds cross validation in an iterative fashion. The first 
+#' prediction (Iteration 0) is the result of the smart guessing procedure. All
+#' subsequent iterations rely on XGBoost to produce preliminary predictions. 
+#' These predictions are then adjusted to adhere to boundary conditions on the 
+#' data (all estimates must be in the range [0,1], and the sum of all estimates
+#' within an occupational group must be <=1).
 #'
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
 #' records, including both known and missing estimates (output of 
@@ -240,7 +294,8 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 #' runs; default is to generate a new set of folds
 #' @param sg.soc.code SOC code to use for smart guessing, either "upSOC2", 
 #' "upSOC3", or "upSOC4"
-#' @return 
+#' @return A list of length 2, containing a list of hold out indices for each
+#' test fold, and the results of iterative modeling
 #' @export
 iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
                                 mdl.d=14,mdl.n=200,mdl.e=0.6,
@@ -269,8 +324,8 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
       }
       
       # 'dopar' will run this on multiple threads (change to just 'do' for synchronous runs)
-      cv.results <- foreach(fold=cv.folds,fold.num=icount(),
-                            .packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
+      cv.results <- foreach::foreach(fold=cv.folds,fold.num=icount(),
+                                     .packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
         
         ors.data.known$is.test <- 0
         ors.data.known$orig.value <- ors.data.known$value
@@ -522,8 +577,8 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
       
     }
     else {
-      cv.results <- foreach(res=model.iterations[[iter]],fold.num=icount(),
-                            .packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
+      cv.results <- foreach::foreach(res=model.iterations[[iter]],fold.num=icount(),
+                                     .packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
         
         # Get data from previous iteration
         data.train <- res$data
@@ -536,15 +591,16 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
         }
         
         # Format data and assign bounds
-        sparse.train <- xgb.DMatrix(data=sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
-        setinfo(sparse.train,'label_lower_bound',data.train$lower_bound)
-        setinfo(sparse.train,'label_upper_bound',data.train$upper_bound)
-        setinfo(sparse.train,'weight',data.train$weight)
+        sparse.train <- xgboost::xgb.DMatrix(data=sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
+        xgboost::setinfo(sparse.train,'label_lower_bound',data.train$lower_bound)
+        xgboost::setinfo(sparse.train,'label_upper_bound',data.train$upper_bound)
+        xgboost::setinfo(sparse.train,'weight',data.train$weight)
         
         # Fit the model and make predictions
+        # Note: https://github.com/uber/causalml/issues/96
         print(paste("Evaluating model ",fold.num,"...",sep=""))
-        mdl <- xgboost(data=sparse.train,booster="gbtree",max_depth=mdl.d,eta=mdl.e,
-                       nthread=20,nrounds=mdl.n,objective="reg:squarederror") # Note: https://github.com/uber/causalml/issues/96
+        mdl <- xgboost::xgboost(data=sparse.train,booster="gbtree",max_depth=mdl.d,eta=mdl.e,
+                                nthread=20,nrounds=mdl.n,objective="reg:squarederror")
         data.train$prediction <- predict(mdl,newdata=sparse.train)
         
         # Replace only estimates in test fold with their predicted values
@@ -598,11 +654,12 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
 #' each iteration. Recall that Iteration 0 is simply the output of smart
 #' guessing (no modeling involved).
 #'
-#' @param model.iterations Modeling results (output of iterateModelKFCVwSG(), 
-#' specifically output$model.iterations)
+#' @param model.results Modeling results (output of iterateModelKFCVwSG())
 #' @return Collated predictions of each test fold, by iteration
 #' @export
-getTestFoldData <- function(model.iterations) {
+getTestFoldData <- function(model.results) {
+  model.iterations <- model.results$model.iterations
+  
   # Set up final data frame
   test.fold.data <- data.frame(fold=rep(NA,nrow(model.iterations[[1]][[1]]$data)),
                                req.cat=model.iterations[[1]][[1]]$data$req.cat,
@@ -638,7 +695,16 @@ getTestFoldData <- function(model.iterations) {
 
 #' Compute convergence iteration
 #'
-#' DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
+#' For a set of iterative k-folds modeling results, it is necessary to determine
+#' the convergence point of the model. This function computes this using the 
+#' RMSE of iterated predictions vs. the actual known values (this can be 
+#' accomplished because the k-folds procedure relies on known estimates only,
+#' and simulates missing estimates from the known set).
+#' 
+#' We defined convergence as when the difference between the RMSE of consecutive
+#' iterations was < 0.001. If this convergence criteria is not met, the function
+#' simply returns the final iteration (and a message stating that convergence 
+#' was not reached). Recall that Iteration 0 is simply the output of smart 
 #' guessing (no modeling involved).
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
@@ -649,7 +715,7 @@ computeConvergence <- function(test.fold.data,verbose=TRUE) {
   
   rmse.by.iter <- vector()
   for (i in c(1:(ncol(test.fold.data)-3))) {
-    rmse.by.iter <- c(rmse.by.iter,rmse(test.fold.data[,"actual"],test.fold.data[,i+3]))
+    rmse.by.iter <- c(rmse.by.iter,ModelMetrics::rmse(test.fold.data[,"actual"],test.fold.data[,i+3]))
   }
   names(rmse.by.iter) <- paste("Prediction",c(0:(length(rmse.by.iter)-1)),sep="")
   
@@ -681,9 +747,10 @@ computeConvergence <- function(test.fold.data,verbose=TRUE) {
 
 #' Plot predicted vs. actual values
 #'
-#' DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
-#' guessing (no modeling involved). Note that n.iter=10 will plot Iterations 
-#' 0-10, for a total of 11 iterations.
+#' For each iteration, plot the predicted values vs. actual values of 
+#' observations in test folds. Recall that Iteration 0 is simply the output of 
+#' smart guessing (no modeling involved). Note that n.iter=10 will plot 
+#' Iterations 0-10, for a total of 11 iterations.
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
 #' @param plot.alpha Alpha (transparency) to use for points; default is 0.1
@@ -722,13 +789,15 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
     selected.cols <- test.fold.data[,c("req.cat","actual",colnames(test.fold.data)[i])]
     colnames(selected.cols) <- c("req.cat","actual","calculated")
     
-    plts[[(i-3)]] <- ggplot(selected.cols) + geom_point(aes(x=calculated,y=actual,color=req.cat),alpha=plot.alpha) +
-      theme_bw() + scale_colour_manual(values=c("Cognitive and mental demands"=reqcat.palette[1],
-                                                "Environmental conditions"=reqcat.palette[2],
-                                                "Physical demands"=reqcat.palette[3],
-                                                "Education, training, and experience"=reqcat.palette[4]),name="") +
-      labs(title=paste(titles[i],"vs. Actual")) + xlab(titles[i]) + ylab("Actual") +
-      geom_abline(intercept=0,slope=1,color=line.color) + theme(legend.position="bottom")
+    plts[[(i-3)]] <- ggplot2::ggplot(selected.cols) + 
+      ggplot2::geom_point(aes(x=calculated,y=actual,color=req.cat),alpha=plot.alpha) +
+      ggplot2::scale_colour_manual(values=c("Cognitive and mental demands"=reqcat.palette[1],
+                                            "Environmental conditions"=reqcat.palette[2],
+                                            "Physical demands"=reqcat.palette[3],
+                                            "Education, training, and experience"=reqcat.palette[4]),name="") +
+      ggplot2::labs(title=paste(titles[i],"vs. Actual")) + ggplot2::xlab(titles[i]) + ggplot2::ylab("Actual") +
+      ggplot2::geom_abline(intercept=0,slope=1,color=line.color) + 
+      ggplot2::theme_bw() + ggplot2::theme(legend.position="bottom")
   }
   
   if (print.plot==TRUE) {
@@ -736,7 +805,7 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
                                     # legend.grob=get_legend(plts[[1]]),
                                     # common.legend=TRUE,
                                     legend="none")
-    ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
+    ggplot2::ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
     # return(plots.grid)
   }
   
@@ -770,8 +839,8 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 #' @export
 blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   # Get aggregated test fold data
-  test.folds.soc2 <- getTestFoldData(model.results.soc2$model.iterations)
-  test.folds.soc3 <- getTestFoldData(model.results.soc3$model.iterations)
+  test.folds.soc2 <- getTestFoldData(model.results.soc2)
+  test.folds.soc3 <- getTestFoldData(model.results.soc3)
   
   # Compute convergence iterations
   cat("Computing convergence for model 1...\n\n")
@@ -788,7 +857,7 @@ blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   for (i in seq(0,1,0.01)) {
     lin.com <- (i*test.folds.soc2[rownames(test.folds.soc2),conv.iter.soc2]) + 
       ((1-i)*test.folds.soc3[rownames(test.folds.soc2),conv.iter.soc3])
-    blending.ratios <- c(blending.ratios,rmse(test.folds.soc2$actual,lin.com))
+    blending.ratios <- c(blending.ratios,ModelMetrics::rmse(test.folds.soc2$actual,lin.com))
   }
   rm(lin.com)
   blending.ratios <- data.frame(RMSE=blending.ratios,
@@ -800,11 +869,14 @@ blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   
   # Plot
   if (print.plot) {
-    p.blend <- ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
-      geom_point(aes(color=color),alpha=0.5) + scale_color_manual(values=c("grey50","red")) + 
-      labs(title="RMSE of blended predictions (at convergence)") + theme_bw() + theme(legend.position="none") + 
-      scale_x_continuous("SOC2 model contribution",sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
-    ggsave(paste("kfcv-blended-rmse.png",sep=""),p.blend,width=6,height=3.75)
+    p.blend <- ggplot2::ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
+      ggplot2::geom_point(aes(color=color),alpha=0.5) + 
+      ggplot2::scale_color_manual(values=c("grey50","red")) + 
+      ggplot2::labs(title="RMSE of blended predictions (at convergence)") + 
+      ggplot2::theme_bw() + ggplot2::theme(legend.position="none") + 
+      ggplot2::scale_x_continuous("SOC2 model contribution",
+                                  sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
+    ggplot2::ggsave(paste("kfcv-blended-rmse.png",sep=""),p.blend,width=6,height=3.75)
   }
   
   # Get proportions

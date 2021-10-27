@@ -15,6 +15,16 @@ computeConvergence(test.fold.data, verbose = TRUE)
 Convergence iteration of k-folds cross validation modeling
 }
 \description{
-DETAILED DESCRIPTION Recall that Iteration 0 is simply the output of smart
+For a set of iterative k-folds modeling results, it is necessary to determine
+the convergence point of the model. This function computes this using the
+RMSE of iterated predictions vs. the actual known values (this can be
+accomplished because the k-folds procedure relies on known estimates only,
+and simulates missing estimates from the known set).
+}
+\details{
+We defined convergence as when the difference between the RMSE of consecutive
+iterations was < 0.001. If this convergence criteria is not met, the function
+simply returns the final iteration (and a message stating that convergence
+was not reached). Recall that Iteration 0 is simply the output of smart
 guessing (no modeling involved).
 }

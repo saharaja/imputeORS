@@ -33,5 +33,55 @@ default is 0.5}
 Input data frame, with missing values filled in by smart guesses
 }
 \description{
-DETAILED DESCRIPTION lord have mercy on my soul
+Function to perform "smart guessing" procedure to generate initial guess for
+iterative k-folds cross validation. This approach leverages some of the
+structure built into the data. Namely, occupations within a given 2- or
+3-digit SOC group are similar in nature. Thus, it is reasonable to assume
+that the requirements for the constituent occupations also follow similar
+distributions. This function uses information from the other members of a
+given SOC group to produce an initial guess for a particular occupation, and
+is briefly described below.
+}
+\details{
+The following procedure is followed within each SOC group. Each requirement
+is searched for an occupation with the "best" distribution, i.e. the job with
+the maximum number of known estimates. In cases where there are multiple such
+jobs, their requirement distributions are averaged to arrive at a single best
+distribution. Then, each job (within a given requirement) is compared to this
+best distribution, and falls into one of three cases:
+
+(1) Overlap between current job and the best distribution
+(2) No overlap between current job and the best distribution
+(3) Current job has no associated estimates (subset of case 2, above)
+
+In the first case, missing estimates are populated as follows. A scaling
+factor was first computed based on the overlapping observations in the
+current job and the best distribution. This scaling factor is then multiplied
+by the sum total of the estimates associated with observations in the best
+distribution that did not have counterparts in the current job, yielding some
+value x. The value of x is then evenly distributed across all the
+observations that were missing estimates in the current job, but had
+estimates in the best distribution. Finally, the sum of all the values in the
+current job (both known, and guessed) is subtracted from 1, and this
+remaining value is evenly distributed across any outstanding observations in
+the current job.
+
+In the second case, the missing estimates are simply populated with the naive
+guess for their value. For example, if the known estimates in the current job
+sum to 0.8, and there are two observations with missing estimates, each one
+is given a value of 0.2 / 2 = 0.1.
+
+In the third case, the observations in the current job whose counterparts
+have known estimates in the best distribution simply receive the value of the
+counterpart's estimate. The remaining estimates are populated using the naive
+approach described in case 2.
+
+The above procedure is completed per requirement, per SOC group. All guesses
+are then adjusted to adhere to boundary conditions on the data (all estimates
+must be in the range \link{0,1}, and the sum of all estimates within an
+occupational group must be <=1). Note that the modeling weights associated
+with guessed values are altered based on which of the three cases they fall
+into, with those falling in cases 1 and 3 receiving higher weights, and those
+falling in case 2 receiving lower weights. These weights are used in the
+iterative modeling step.
 }

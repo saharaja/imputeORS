@@ -4,11 +4,10 @@
 \alias{getTestFoldData}
 \title{Collate predictions for all 10 test folds, for each iteration}
 \usage{
-getTestFoldData(model.iterations)
+getTestFoldData(model.results)
 }
 \arguments{
-\item{model.iterations}{Modeling results (output of iterateModelKFCVwSG(),
-specifically output$model.iterations)}
+\item{model.results}{Modeling results (output of iterateModelKFCVwSG())}
 }
 \value{
 Collated predictions of each test fold, by iteration

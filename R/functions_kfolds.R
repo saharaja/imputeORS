@@ -65,10 +65,12 @@
 #' is 0.5
 #' @param wt.high Model weight to assign to high-confidence smart guesses; 
 #' default is 0.5
+#' @param verbose Should messages be printed; default is FALSE (mute messages) 
 #' @return Input data frame, with missing values filled in by smart guesses
 #' @export
 smartGuessKFCV <- function(ors.data.for.sg,ors.data,
-                           wt.low=0,wt.mid=0.5,wt.high=0.5) {
+                           wt.low=0,wt.mid=0.5,wt.high=0.5,
+                           verbose=FALSE) {
   
   # Pre-populate known/missing values into prediction column
   ors.data.for.sg$prediction <- ors.data.for.sg[,"value"]
@@ -86,7 +88,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
     best.dist <- NA
     
     # Identify best distribution(s)
-    cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
+    if (verbose) {
+      cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
+    }
     for (occ in levels(ors.data.for.sg$occupation_text)) {
       current.occ.group <- ors.data.for.sg[as.character(ors.data.for.sg$occupation_text)==occ
                                            & as.character(ors.data.for.sg$additive_group)==adg,]
@@ -110,7 +114,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
     
     # Average distribution (in case of equivalent best)
     if (length(best.occ) > 1) {
-      print("*** Averaging over multiple best distributions...")
+      if (verbose) {
+        print("*** Averaging over multiple best distributions...")
+      }
       bocc.tab <- data.frame(matrix(nrow=nrow(current.occ.group),ncol=length(best.occ)),
                              row.names=paste(current.occ.group$frequency,current.occ.group$intensity,sep="-"))
       colnames(bocc.tab) <- best.occ
@@ -128,7 +134,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
     if(sum(best.dist,na.rm=TRUE) > 1) {
       best.dist <- best.dist / sum(best.dist,na.rm=TRUE)
     }
-    # print(best.dist)
+    if (verbose) {
+      print(best.dist)
+    }
     
     # Assign upper bounds and guesses by occupational group (OG)
     for (occ in levels(ors.data.for.sg$occupation_text)) {
@@ -178,7 +186,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
         
         # If there is overlap between best distribution and current OG..
         if (length(common.known) > 0) {  # make sure there is overlap
-          # print(paste("Smart guessing for occupation: ",occ,sep=""))
+          if (verbose) {
+            print(paste("Smart guessing for occupation: ",occ,sep=""))
+          }
           
           # Common values
           c1 <- sum(best.dist[common.known],na.rm=TRUE)
@@ -232,7 +242,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
         
         # If the current OG is an empty distribution (all NAs, i.e. special case of no overlap)...
         else if (sum(is.na(current.occ.group[,"value"]))==nrow(current.occ.group)) {  # make sure the OG is empty
-          print(paste("Smart guessing for occupation: ",occ,sep=""))
+          if (verbose) {
+            print(paste("Smart guessing for occupation: ",occ,sep=""))
+          }
           
           # Get observations that can take smart guesses/bounds (all)
           smart.guess.labels <- current.occ.group[which(is.na(current.occ.group[,"value"])),"to.sort"]
@@ -272,7 +284,7 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 }
 
 
-#' K-folds CV with Smart Guessing
+#' K-folds CV, with Smart Guessing
 #'
 #' Function to do k-folds cross validation in an iterative fashion. The first 
 #' prediction (Iteration 0) is the result of the smart guessing procedure. All
@@ -297,9 +309,9 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 #' @return A list of length 2, containing a list of hold out indices for each
 #' test fold, and the results of iterative modeling
 #' @export
-iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
-                                mdl.d=14,mdl.n=200,mdl.e=0.6,
-                                fold.list=NULL,sg.soc.code) {
+iterateModelKFCV <- function(ors.data,n.iter,weight.step,
+                             mdl.d=14,mdl.n=200,mdl.e=0.6,
+                             fold.list=NULL,sg.soc.code) {
   
   # Get known values only
   ors.data.known <- ors.data[ors.data$known.val==1,]
@@ -315,12 +327,12 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
     if(iter==0) {
       
       if (is.null(fold.list)) {
-        cv.folds <- caret::createFolds(ors.data.known$upSOC3,k=10,list=TRUE) # Create folds, balanced on SOC3 code
         print("Generating folds...")
+        cv.folds <- caret::createFolds(ors.data.known$upSOC3,k=10,list=TRUE) # Create folds, balanced on SOC3 code
       }
       else {
-        cv.folds <- fold.list
         print("Using provided folds...")
+        cv.folds <- fold.list
       }
       
       # 'dopar' will run this on multiple threads (change to just 'do' for synchronous runs)
@@ -349,7 +361,8 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
         
         
         smartGuessKFCV <- function(ors.data.for.sg,ors.data,
-                                   wt.low=0,wt.mid=0.5,wt.high=0.5) {
+                                   wt.low=0,wt.mid=0.5,wt.high=0.5,
+                                   verbose=FALSE) {
           
           # Pre-populate known/missing values into prediction column
           ors.data.for.sg$prediction <- ors.data.for.sg[,"value"]
@@ -367,7 +380,9 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
             best.dist <- NA
             
             # Identify best distribution(s)
-            cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
+            if (verbose) {
+              cat("\n",paste("Identifying most complete distribution for additive group: ",adg,sep=""),"\n")
+            }
             for (occ in levels(ors.data.for.sg$occupation_text)) {
               current.occ.group <- ors.data.for.sg[as.character(ors.data.for.sg$occupation_text)==occ
                                                    & as.character(ors.data.for.sg$additive_group)==adg,]
@@ -391,7 +406,9 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
             
             # Average distribution (in case of equivalent best)
             if (length(best.occ) > 1) {
-              print("*** Averaging over multiple best distributions...")
+              if (verbose) {
+                print("*** Averaging over multiple best distributions...")
+              }
               bocc.tab <- data.frame(matrix(nrow=nrow(current.occ.group),ncol=length(best.occ)),
                                      row.names=paste(current.occ.group$frequency,current.occ.group$intensity,sep="-"))
               colnames(bocc.tab) <- best.occ
@@ -409,7 +426,9 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
             if(sum(best.dist,na.rm=TRUE) > 1) {
               best.dist <- best.dist / sum(best.dist,na.rm=TRUE)
             }
-            # print(best.dist)
+            if (verbose) {
+              print(best.dist)
+            }
             
             # Assign upper bounds and guesses by occupational group (OG)
             for (occ in levels(ors.data.for.sg$occupation_text)) {
@@ -459,7 +478,9 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
                 
                 # If there is overlap between best distribution and current OG..
                 if (length(common.known) > 0) {  # make sure there is overlap
-                  # print(paste("Smart guessing for occupation: ",occ,sep=""))
+                  if (verbose) {
+                    print(paste("Smart guessing for occupation: ",occ,sep=""))
+                  }
                   
                   # Common values
                   c1 <- sum(best.dist[common.known],na.rm=TRUE)
@@ -513,7 +534,9 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
                 
                 # If the current OG is an empty distribution (all NAs, i.e. special case of no overlap)...
                 else if (sum(is.na(current.occ.group[,"value"]))==nrow(current.occ.group)) {  # make sure the OG is empty
-                  print(paste("Smart guessing for occupation: ",occ,sep=""))
+                  if (verbose) {
+                    print(paste("Smart guessing for occupation: ",occ,sep=""))
+                  }
                   
                   # Get observations that can take smart guesses/bounds (all)
                   smart.guess.labels <- current.occ.group[which(is.na(current.occ.group[,"value"])),"to.sort"]
@@ -573,6 +596,7 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
              data=data.train,which.test.fold=fold.num)
       }
       
+      names(cv.results) <- paste("fold",c(1:length(cv.folds)),sep="")
       model.iterations[[iter+1]] <- cv.results
       
     }
@@ -634,6 +658,7 @@ iterateModelKFCVwSG <- function(ors.data,n.iter,weight.step,
              model=mdl,data=data.train,which.test.fold=fold.num)
       }
       
+      names(cv.results) <- paste("fold",c(1:length(cv.folds)),sep="")
       model.iterations[[iter+1]] <- cv.results
       
     }

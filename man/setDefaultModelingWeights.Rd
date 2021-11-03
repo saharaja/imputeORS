@@ -4,11 +4,14 @@
 \alias{setDefaultModelingWeights}
 \title{Assign default modeling weights}
 \usage{
-setDefaultModelingWeights(ors.data)
+setDefaultModelingWeights(ors.data, unknown.weight = 0.5)
 }
 \arguments{
 \item{ors.data}{Data augmented with relevant predictors (output of
 getPredictors())}
+
+\item{unknown.weight}{Modeling weight to assign to unknown estimates; default
+is 0.5}
 }
 \value{
 Data augmented with relevant predictors and default modeling weights

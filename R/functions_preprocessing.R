@@ -507,12 +507,14 @@ getPredictors <- function(orsMnGCe) {
 #'
 #' @param ors.data Data augmented with relevant predictors (output of 
 #' getPredictors())
+#' @param unknown.weight Modeling weight to assign to unknown estimates; default
+#' is 0.5
 #' @return Data augmented with relevant predictors and default modeling weights
 #' @export
-setDefaultModelingWeights <- function(ors.data) {
+setDefaultModelingWeights <- function(ors.data,unknown.weight=0.5) {
   # Assign default modeling weights based on indicator column
   ors.data$weight <- ors.data$known.val
-  ors.data[ors.data$weight==0,"weight"] <- 0.5
+  ors.data[ors.data$weight==0,"weight"] <- unknown.weight
   ors.data[ors.data$weight==2,"weight"] <- 1
   
   return(ors.data)

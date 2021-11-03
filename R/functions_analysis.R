@@ -1,3 +1,35 @@
+
+
+## FUNCTION to compute sums of occupational groups
+#' SUMMARY
+#' 
+#' DETAILED DESCRIPTION
+#'
+#' @param ors.data
+#' @param column.name
+#' @return 
+#' @export
+checkSums <- function(ors.data,column.name="prediction") {
+  pct.sums <- vector()
+  for (occ in levels(ors.data$occupation_text)) {
+    for (adg in levels(ors.data$additive_group)) {
+      current.occ.adg <- ors.data[as.character(ors.data$occupation_text)==occ & 
+                                    as.character(ors.data$additive_group)==adg,]
+      
+      if (nrow(current.occ.adg)==0) {
+        next
+      }
+      names.temp <- c(names(pct.sums),paste(occ,adg,sep="-"))
+      pct.sums <- c(pct.sums,sum(current.occ.adg[,column.name],na.rm=TRUE))
+      names(pct.sums) <- names.temp
+      rm(names.temp)
+    }
+  }
+  return(pct.sums)
+}
+
+
+
 ## FUNCTION to compute 5-iteration rolling average MAE and STD (using missing observations only)
 #' SUMMARY
 #' 

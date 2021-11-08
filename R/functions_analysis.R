@@ -1,7 +1,6 @@
 
 
-## FUNCTION to compute sums of occupational groups
-#' SUMMARY
+#' Compute sums of occupational groups
 #' 
 #' DETAILED DESCRIPTION
 #'
@@ -29,107 +28,65 @@ checkSums <- function(ors.data,column.name="prediction") {
 }
 
 
-
-## FUNCTION to compute 5-iteration rolling average MAE and STD (using missing observations only)
-#' SUMMARY
-#' 
-#' DETAILED DESCRIPTION
-#'
-#' @param simulation
-#' @return 
-#' @export
-modelConvergence <- function(simulation) {
-  avg.mae <- c(NA,NA,NA,NA)
-  stddev <- c(NA,NA,NA,NA)
-  for (i in c(6:length(simulation))) {
-    select.missing <- which(simulation$iteration0$known.val!=1)
-    # print(length(select.missing))
-    maes <- c(mae(simulation[[i-4]]$results[select.missing,"previous.prediction"],
-                  simulation[[i-4]]$results[select.missing,"current.prediction"]),
-              mae(simulation[[i-3]]$results[select.missing,"previous.prediction"],
-                  simulation[[i-3]]$results[select.missing,"current.prediction"]),
-              mae(simulation[[i-2]]$results[select.missing,"previous.prediction"],
-                  simulation[[i-2]]$results[select.missing,"current.prediction"]),
-              mae(simulation[[i-1]]$results[select.missing,"previous.prediction"],
-                  simulation[[i-1]]$results[select.missing,"current.prediction"]),
-              mae(simulation[[i-0]]$results[select.missing,"previous.prediction"],
-                  simulation[[i-0]]$results[select.missing,"current.prediction"]))
-    avg.mae <- c (avg.mae,mean(maes))
-    stddev <- c(stddev,sd(maes))
-    
-  }
-  avg.mae.diff <- c(NA,abs(avg.mae[2:length(avg.mae)]-avg.mae[1:(length(avg.mae)-1)]))
-  return(list(rolling.mae.average=avg.mae,
-              rolling.mae.diff=avg.mae.diff,
-              standard.dev.mae=stddev,
-              convergence.iteration=which(avg.mae.diff<0.005 & stddev<0.01)[1]))
-}
-
-
-## FUNCTION to pull convergence predictions (one per simulation) + mean prediction
-#' SUMMARY
+#' Get convergence predictions (one per simulation) and overall mean prediction
 #' 
 #' DETAILED DESCRIPTION
 #'
 #' @param simulations
+#' @param iteration
+#' @param ors.data.sims
 #' @return 
 #' @export
-getMeanPredictions <- function(simulations) {
+getMeanPredictions <- function(simulations,iteration,ors.data.sims) {
   # Compute convergence iterations and get relevant predictions
   # Uses population means - mean of simulation predictions for missing observations, actual values for known
   n.sim <- length(simulations)
-  data <- data.frame(matrix(nrow=nrow(simulations[[1]]$iteration0),ncol=n.sim),
-                     row.names=rownames(simulations[[1]]$iteration0))
+  data <- data.frame(matrix(nrow=nrow(simulations[[1]]$iteration0$data),ncol=n.sim),
+                     row.names=rownames(simulations[[1]]$iteration0$data))
   colnames(data) <- c(paste("sim",c(1:n.sim),".prediction",sep=""))
-  data <- cbind(simulations[[1]]$iteration0[,c("additive_group","characteristic","occupation_text","frequency",
-                                               "intensity","upSOC2","upSOC3","upSOC4","known.val")],data)
-  for (i in c(1:n.sim)) {
-    conv.iter <- convergenceCritMissing(simulations[[i]])$convergence.iteration
-    data[,paste("sim",i,".prediction",sep="")] <- simulations[[i]][[conv.iter+1]]$data$prediction
+  data <- cbind(simulations[[1]]$iteration0$data,data)
+  data <- data[,-grep("^prediction",colnames(data))]
+  data <- data[,-grep("value",colnames(data))]
+  data <- data[,-grep("weight",colnames(data))]
+  data <- data[,-grep("flag",colnames(data))]
+  
+  if (is.numeric(iteration)) {
+    print(paste("Calculating mean prediction at iteration",iteration))
+    for (i in c(1:n.sim)) {
+      data[,paste("sim",i,".prediction",sep="")] <- simulations[[i]][[iteration+1]]$data$prediction
+    }
   }
+  else {
+    print("Unexpected input for 'iteration'")
+    return()
+  }
+  
   data$mean.prediction <- rowMeans(data[,paste("sim",c(1:n.sim),".prediction",sep="")])
-  data[data$known.val==1,"mean.prediction"] <- 
-    bls1sim[gsub("^[0-9][0-9]*\\.","",rownames(data)[data$known.val==1]),"value"]
+  data[data$known.val==1,"mean.prediction"] <- ors.data.sims[rownames(data)[data$known.val==1],"value"]
   
   return(data) 
 }
 
 
-## FUNCTION to calculate confidence intervals for predictions (missing observations only)
-#' SUMMARY
+#' Calculate confidence intervals for predictions (missing observations only)
 #' 
 #' DETAILED DESCRIPTION
 #'
-#' @param simulations
+#' @param model.summary.average
 #' @param confidence.level
 #' @return 
 #' @export
-predictCI <- function(simulations,confidence.level) {
-  
-  # Get convergence iteration for each simulation
-  conv.iter <- lapply(simulations,convergenceCritMissing)
-  for (i in c(1:length(conv.iter))) {
-    conv.iter[[i]] <- conv.iter[[i]]$convergence.iteration
-  }
-  conv.iter <- as.vector(do.call(cbind,conv.iter))
-  cat("\nConvergence attained at iterations: ",conv.iter,"\n")
-  
+predictCIs <- function(model.summary.average,confidence.level=0.95) {
   # Get predictions from relevant iteration of each simulation to create distributions
   # Use MISSING OBSERVATIONS only
-  n <- length(simulations)
-  select.missing <- rownames(simulations[[1]]$iteration0)[which(simulations[[1]]$iteration0$known.val!=1)]
-  p <- data.frame(matrix(ncol=n,nrow=length(select.missing)),row.names=select.missing)
-  colnames(p) <- paste("sim",c(1:n),"pred",sep="")
-  for (i in c(1:n)) {
-    p[,i] <- simulations[[i]][[conv.iter[i]+1]]$data[rownames(p),"prediction"]
-  }
-  print(dim(p))
+  p <- model.summary.average[model.summary.average$known.val==0,
+                             grep(paste("sim[0-9]*\\.prediction",sep=""),colnames(model.summary.average))]
   
   # Get CIs
-  returnConfInt <- function(distrib) {
+  returnConfInt <- function(distrib,con.lvl=confidence.level) {
     tryCatch(
       {
-        return(c(t.test(distrib,conf.level=confidence.level)$conf.int[1:2],mean(distrib),0))
+        return(c(t.test(distrib,conf.level=con.lvl)$conf.int[1:2],mean(distrib),0))
         # return(c(confint(lm(unlist(distrib)~1),level=confidence.level)[1:2],mean(distrib),0))   # equivalent method
       } , error=function(e) {
         print(e)
@@ -141,7 +98,7 @@ predictCI <- function(simulations,confidence.level) {
   # p <- p[1:1000,]  # for debugging
   ci <- apply(p,1,returnConfInt)
   ci <- as.data.frame(t(ci))
-  colnames(ci) <- c("lower","upper","mean.prediction","flag")
+  colnames(ci) <- c("lower","upper","mean.prediction","error.flag")
   
   return(list(distributions=p,CIs=ci))
 }
@@ -200,12 +157,6 @@ correlationPlot <- function(simulations) {
   p.color <- rev(colorRampPalette(brewer.pal(n=11,name="RdBu"))(650))
   
   # Heatmaps (with and without row/column names)
-  # p.lab <- pheatmap(cor.mat,border_color=NA,color=p.color,breaks=seq(0.35,1,0.001),
-  #                   cluster_cols=FALSE,cluster_rows=FALSE,
-  #                   gaps_row=p.gaps,gaps_col=p.gaps)
-  # p.pub <- pheatmap(cor.mat,border_color=NA,color=p.color,breaks=seq(0.35,1,0.001),
-  #                   cluster_cols=FALSE,cluster_rows=FALSE,
-  #                   gaps_row=p.gaps,gaps_col=p.gaps,show_rownames=FALSE,show_colnames=FALSE)
   p.lab <- Heatmap(cor.mat,name="Correlation",col=rev(brewer.pal(n=11,name="RdBu")),
                    cluster_rows=FALSE,cluster_columns=FALSE,
                    row_split=substr(rownames(cor.mat),1,2),row_gap=unit(1,"mm"),
@@ -241,19 +192,19 @@ computeOverlap <- function(simulations,jobA,jobB) {
   
   # Filter by jobs
   data.a <- droplevels(data[as.character(data$occupation_text)==jobA,
-                            c("additive_group","characteristic","occupation_text","frequency",
+                            c("additive_group","requirement","occupation_text","frequency",
                               "intensity","upSOC2","upSOC3","upSOC4","known.val","mean.prediction")])
   data.b <- droplevels(data[as.character(data$occupation_text)==jobB,
-                            c("additive_group","characteristic","occupation_text","frequency",
+                            c("additive_group","requirement","occupation_text","frequency",
                               "intensity","upSOC2","upSOC3","upSOC4","known.val","mean.prediction")])
   data.ab <- merge(data.a,data.b,
-                   by=c("additive_group","characteristic","frequency","intensity"),
+                   by=c("additive_group","requirement","frequency","intensity"),
                    sort=FALSE,suffixes=c(".a",".b"))
   rm(data.a)
   rm(data.b)
   
   # Compute overlap
-  jobAB <- distinct(data.ab[,c("additive_group","characteristic")])
+  jobAB <- distinct(data.ab[,c("additive_group","requirement")])
   jobAB$overlap <- NA
   rownames(jobAB) <- jobAB$additive_group
   data.ab$o <- data.ab$mean.prediction.a * data.ab$mean.prediction.b
@@ -278,3 +229,38 @@ computeOverlap <- function(simulations,jobA,jobB) {
               plot=p.ab))
 }
 
+
+### FUNCTION to compute 5-iteration rolling average MAE and STD (using missing observations only)
+##' SUMMARY
+##'
+##' DETAILED DESCRIPTION
+##'
+##' @param simulation
+##' @return
+##' @export
+# modelConvergence <- function(simulation) {
+#   avg.mae <- c(NA,NA,NA,NA)
+#   stddev <- c(NA,NA,NA,NA)
+#   for (i in c(6:length(simulation))) {
+#     select.missing <- which(simulation$iteration0$known.val!=1)
+#     # print(length(select.missing))
+#     maes <- c(mae(simulation[[i-4]]$results[select.missing,"previous.prediction"],
+#                   simulation[[i-4]]$results[select.missing,"current.prediction"]),
+#               mae(simulation[[i-3]]$results[select.missing,"previous.prediction"],
+#                   simulation[[i-3]]$results[select.missing,"current.prediction"]),
+#               mae(simulation[[i-2]]$results[select.missing,"previous.prediction"],
+#                   simulation[[i-2]]$results[select.missing,"current.prediction"]),
+#               mae(simulation[[i-1]]$results[select.missing,"previous.prediction"],
+#                   simulation[[i-1]]$results[select.missing,"current.prediction"]),
+#               mae(simulation[[i-0]]$results[select.missing,"previous.prediction"],
+#                   simulation[[i-0]]$results[select.missing,"current.prediction"]))
+#     avg.mae <- c (avg.mae,mean(maes))
+#     stddev <- c(stddev,sd(maes))
+# 
+#   }
+#   avg.mae.diff <- c(NA,abs(avg.mae[2:length(avg.mae)]-avg.mae[1:(length(avg.mae)-1)]))
+#   return(list(rolling.mae.average=avg.mae,
+#               rolling.mae.diff=avg.mae.diff,
+#               standard.dev.mae=stddev,
+#               convergence.iteration=which(avg.mae.diff<0.005 & stddev<0.01)[1]))
+# }

@@ -322,6 +322,7 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
   # Get column names of predictors/response
   select.cols <- c("occupation_text","requirement","frequency","intensity","req.cat","upSOC2","upSOC3","prediction")
   
+  doParallel::registerDoParallel(parallel::makeCluster(10)) # use 10 threads (1 per fold) for parallel cross-validation (CV)
   for (iter in c(0:n.iter)) {
     print(paste("Iteration ",iter,"...",sep=""))
     if(iter==0) {
@@ -830,7 +831,7 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
                                     # legend.grob=get_legend(plts[[1]]),
                                     # common.legend=TRUE,
                                     legend="none")
-    ggplot2::ggsave("residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
+    ggplot2::ggsave("kfcv-residPlot.png",plots.grid,width=8.5,height=(ceiling(length(plts)/2)*4 + 0.36))
     # return(plots.grid)
   }
   
@@ -851,6 +852,10 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 #' average that resulted in the lowest RMSE was selected to determine the
 #' blending ratio. For example, if the prediction weighted average of 0.45(run1)
 #' + 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
+#' 
+#' Note that we specify models based on SOC2 and SOC3 smart guesses to provide a
+#' concrete example. In reality, the two models are not limited to this specific
+#' combination.
 #'
 #' @param model.results.soc2 Modeling results of SOC2 smart guessed data (output
 #' of iterateModelKFCVwSG())
@@ -862,7 +867,7 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 #' (as a proportion), the contribution of model.results.soc3, and the blended
 #' predictions of each iteration
 #' @export
-blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
+computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   # Get aggregated test fold data
   test.folds.soc2 <- getTestFoldData(model.results.soc2)
   test.folds.soc3 <- getTestFoldData(model.results.soc3)
@@ -899,8 +904,8 @@ blendModels <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
       ggplot2::scale_color_manual(values=c("grey50","red")) + 
       ggplot2::labs(title="RMSE of blended predictions (at convergence)") + 
       ggplot2::theme_bw() + ggplot2::theme(legend.position="none") + 
-      ggplot2::scale_x_continuous("SOC2 model contribution",
-                                  sec.axis=sec_axis(~ . *-1 + 1,name="SOC3 model contribution"))
+      ggplot2::scale_x_continuous("Model 2 contribution",
+                                  sec.axis=sec_axis(~ . *-1 + 1,name="Model 3 contribution"))
     ggplot2::ggsave(paste("kfcv-blended-rmse.png",sep=""),p.blend,width=6,height=3.75)
   }
   

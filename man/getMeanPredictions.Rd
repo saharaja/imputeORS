@@ -2,9 +2,9 @@
 % Please edit documentation in R/functions_analysis.R
 \name{getMeanPredictions}
 \alias{getMeanPredictions}
-\title{SUMMARY}
+\title{Get convergence predictions (one per simulation) and overall mean prediction}
 \usage{
-getMeanPredictions(simulations)
+getMeanPredictions(simulations, iteration, ors.data.sims)
 }
 \value{
 

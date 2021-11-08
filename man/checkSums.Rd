@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions_analysis.R
 \name{checkSums}
 \alias{checkSums}
-\title{SUMMARY}
+\title{Compute sums of occupational groups}
 \usage{
 checkSums(ors.data, column.name = "prediction")
 }

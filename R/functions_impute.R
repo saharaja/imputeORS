@@ -316,11 +316,16 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
   for (i in c(1:n.sims)) {
     print(paste("Smart guessing for simulation ",i," (Iteration 0)...",sep=""))
     sim.list[[i]] <- do.call(rbind,lapply(ors.data.sims.split,smartGuess,sim.no=i))
+    rownames(sim.list[[i]]) <- gsub("^[0-9][0-9]*\\.","",rownames(sim.list[[i]]))
   }
   
   # Run iterative modeling process for each simulation
-  registerDoParallel(makeCluster(n.sims))
-  model.results <- foreach(current.sim=sim.list,.packages=c('Matrix','xgboost','ModelMetrics')) %do% {
+  print("-------ITERATING MODELS-------")
+  doParallel::registerDoParallel(parallel::makeCluster(n.sims)) # use n.sims threads for parallel processing
+  model.results <- foreach::foreach(current.sim=sim.list,sim.num=icount(),
+                                    .packages=c('Matrix','xgboost','ModelMetrics')) %dopar% {
+    
+    print(paste("Running simulation ",sim.num,":",sep=""))
     
     # Initialize list
     model.iterations <- list()
@@ -344,16 +349,16 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
       }
       
       # Format data and assign bounds
-      sparse.train <- xgb.DMatrix(data=sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
-      setinfo(sparse.train,'label_lower_bound',data.train$lower_bound)
-      setinfo(sparse.train,'label_upper_bound',data.train$upper_bound)
-      setinfo(sparse.train,'weight',data.train$weight)
+      sparse.train <- xgboost::xgb.DMatrix(data=sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
+      xgboost::setinfo(sparse.train,'label_lower_bound',data.train$lower_bound)
+      xgboost::setinfo(sparse.train,'label_upper_bound',data.train$upper_bound)
+      xgboost::setinfo(sparse.train,'weight',data.train$weight)
       
       # Fit the model and make predictions
       # Note: https://github.com/uber/causalml/issues/96
       print(paste("Evaluating model... "))
-      mdl <- xgboost(data=sparse.train,booster="gbtree",verbose=0,max_depth=mdl.d,nrounds=mdl.n,
-                     eta=mdl.e,nthread=20,objective="reg:squarederror")
+      mdl <- xgboost::xgboost(data=sparse.train,booster="gbtree",verbose=0,max_depth=mdl.d,nrounds=mdl.n,
+                              eta=mdl.e,nthread=20,objective="reg:squarederror")
       data.train$current.prediction <- predict(mdl,newdata=sparse.train)
       data.train$prediction.raw.bounded <- data.train$current.prediction
       data.train$prediction.raw <- data.train$current.prediction
@@ -404,12 +409,12 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
       data.train$prediction <- data.train$current.prediction
       data.train$current.prediction <- NULL
       
-      # Get predictions, MAE, model, and data
+      # Get predictions, model, data, MAE, and ME
       iter.results <- list(results=res,model=mdl,data=data.train,
-                           missing.mae=mae(res[to.adjust,"previous.prediction"],res[to.adjust,"current.prediction"]),
+                           missing.mae=ModelMetrics::mae(res[to.adjust,"previous.prediction"],res[to.adjust,"current.prediction"]),
                            missing.me=mean(res[to.adjust,"previous.prediction"]-res[to.adjust,"current.prediction"]),
-                           known.mae=mae(data.train[which(data.train$known.val==1),"value"],
-                                         data.train[which(data.train$known.val==1),"prediction.raw.bounded"]),
+                           known.mae=ModelMetrics::mae(data.train[which(data.train$known.val==1),"value"],
+                                                       data.train[which(data.train$known.val==1),"prediction.raw.bounded"]),
                            known.me=mean(data.train[which(data.train$known.val==1),"value"]-
                                            data.train[which(data.train$known.val==1),"prediction.raw.bounded"]))
       
@@ -427,4 +432,48 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
 }
 
 
+#' Blend model results according to calculated proportions
+#'
+#' Details
+#'
+#' @param model.results.soc2 
+#' @param model.results.soc3 
+#' @param conv.iter.soc2 
+#' @param conv.iter.soc3 
+#' @param soc2.prop 
+#' @param soc3.prop 
+#' @param ors.data.sims 
+#' @param write.files 
+#' @return 
+#' @export
+blendImputations <- function(model.results.soc2,model.results.soc3,
+                             conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop,
+                             write.files=FALSE) {
+  
+  # Format results from model 1
+  model.summary.soc2 <- imputeORS::getMeanPredictions(model.results.soc2,conv.iter.soc2,ors.data.sims)
+  model.summary.soc2$data_element_text <- gsub("Lifting/carrying","Lifting/carrying:",model.summary.soc2$data_element_text)
+  model.summary.soc2$data_element_text <- gsub("Communicating verbally","Speaking",model.summary.soc2$data_element_text)
+  model.summary.soc2$data_element_text <- as.factor(model.summary.soc2$data_element_text)
 
+  # Format results from model 2
+  model.summary.soc3 <- imputeORS::getMeanPredictions(model.results.soc3,conv.iter.soc3,ors.data.sims)
+  model.summary.soc3$data_element_text <- gsub("Lifting/carrying","Lifting/carrying:",model.summary.soc3$data_element_text)
+  model.summary.soc3$data_element_text <- gsub("Communicating verbally","Speaking",model.summary.soc3$data_element_text)
+  model.summary.soc3$data_element_text <- as.factor(model.summary.soc3$data_element_text)
+  model.summary.soc3 <- model.summary.soc3[rownames(model.summary.soc2),]
+  
+  # Blend
+  select.cols <- c(paste("sim",c(1:length(model.results.soc2)),".prediction",sep=""),"mean.prediction")
+  model.summary.average <- model.summary.soc2
+  model.summary.average[,select.cols] <- (soc2.prop * model.summary.soc2[,select.cols]) + (soc3.prop * model.summary.soc3[,select.cols])
+  
+  # Write results
+  # model.summary.average$actual <- ors.data.sims[rownames(model.summary.average),"value"]
+  if (write.files) {
+    write.csv(model.summary.average,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".csv",sep=""))
+    save(model.summary.average,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".Rdata",sep="")) 
+  }
+  
+  return(model.summary.average)
+}

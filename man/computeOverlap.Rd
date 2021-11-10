@@ -2,9 +2,12 @@
 % Please edit documentation in R/functions_analysis.R
 \name{computeOverlap}
 \alias{computeOverlap}
-\title{SUMMARY}
+\title{Compute overlap score between two jobs, and generate plot}
 \usage{
-computeOverlap(simulations, jobA, jobB)
+computeOverlap(blended.results, jobA, jobB, print.plot = TRUE)
+}
+\arguments{
+\item{print.plot}{}
 }
 \value{
 

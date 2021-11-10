@@ -432,9 +432,50 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
 }
 
 
+#' Get predictions (one per simulation) and overall mean prediction for a given
+#' iteration
+#' 
+#' DETAILED DESCRIPTION
+#'
+#' @param simulations
+#' @param iteration
+#' @param ors.data.sims
+#' @return 
+#' @export
+computeMeanPredictions <- function(simulations,iteration,ors.data.sims) {
+  # Compute convergence iterations and get relevant predictions
+  # Uses population means - mean of simulation predictions for missing observations, actual values for known
+  n.sim <- length(simulations)
+  data <- data.frame(matrix(nrow=nrow(simulations[[1]]$iteration0$data),ncol=n.sim),
+                     row.names=rownames(simulations[[1]]$iteration0$data))
+  colnames(data) <- c(paste("sim",c(1:n.sim),".prediction",sep=""))
+  data <- cbind(simulations[[1]]$iteration0$data,data)
+  data <- data[,-grep("^prediction",colnames(data))]
+  data <- data[,-grep("value",colnames(data))]
+  data <- data[,-grep("weight",colnames(data))]
+  data <- data[,-grep("flag",colnames(data))]
+  
+  if (is.numeric(iteration)) {
+    print(paste("Calculating mean prediction at iteration",iteration))
+    for (i in c(1:n.sim)) {
+      data[,paste("sim",i,".prediction",sep="")] <- simulations[[i]][[iteration+1]]$data$prediction
+    }
+  }
+  else {
+    print("Unexpected input for 'iteration'")
+    return()
+  }
+  
+  data$mean.prediction <- rowMeans(data[,paste("sim",c(1:n.sim),".prediction",sep="")])
+  data[data$known.val==1,"mean.prediction"] <- ors.data.sims[rownames(data)[data$known.val==1],"value"]
+  
+  return(data) 
+}
+
+
 #' Blend model results according to calculated proportions
 #'
-#' Details
+#' DETAILED DESCRIPTION
 #'
 #' @param model.results.soc2 
 #' @param model.results.soc3 
@@ -451,13 +492,13 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
                              write.files=FALSE) {
   
   # Format results from model 1
-  model.summary.soc2 <- imputeORS::getMeanPredictions(model.results.soc2,conv.iter.soc2,ors.data.sims)
+  model.summary.soc2 <- imputeORS::computeMeanPredictions(model.results.soc2,conv.iter.soc2,ors.data.sims)
   model.summary.soc2$data_element_text <- gsub("Lifting/carrying","Lifting/carrying:",model.summary.soc2$data_element_text)
   model.summary.soc2$data_element_text <- gsub("Communicating verbally","Speaking",model.summary.soc2$data_element_text)
   model.summary.soc2$data_element_text <- as.factor(model.summary.soc2$data_element_text)
 
   # Format results from model 2
-  model.summary.soc3 <- imputeORS::getMeanPredictions(model.results.soc3,conv.iter.soc3,ors.data.sims)
+  model.summary.soc3 <- imputeORS::computeMeanPredictions(model.results.soc3,conv.iter.soc3,ors.data.sims)
   model.summary.soc3$data_element_text <- gsub("Lifting/carrying","Lifting/carrying:",model.summary.soc3$data_element_text)
   model.summary.soc3$data_element_text <- gsub("Communicating verbally","Speaking",model.summary.soc3$data_element_text)
   model.summary.soc3$data_element_text <- as.factor(model.summary.soc3$data_element_text)
@@ -465,15 +506,56 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
   
   # Blend
   select.cols <- c(paste("sim",c(1:length(model.results.soc2)),".prediction",sep=""),"mean.prediction")
-  model.summary.average <- model.summary.soc2
-  model.summary.average[,select.cols] <- (soc2.prop * model.summary.soc2[,select.cols]) + (soc3.prop * model.summary.soc3[,select.cols])
+  blended.results <- model.summary.soc2
+  blended.results[,select.cols] <- (soc2.prop * model.summary.soc2[,select.cols]) + (soc3.prop * model.summary.soc3[,select.cols])
   
   # Write results
-  # model.summary.average$actual <- ors.data.sims[rownames(model.summary.average),"value"]
+  # blended.results$actual <- ors.data.sims[rownames(blended.results),"value"]
   if (write.files) {
-    write.csv(model.summary.average,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".csv",sep=""))
-    save(model.summary.average,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".Rdata",sep="")) 
+    write.csv(blended.results,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".csv",sep=""))
+    save(blended.results,file=paste(soc2.prop,"soc2-",soc3.prop,"soc3",".Rdata",sep="")) 
   }
   
-  return(model.summary.average)
+  return(blended.results)
+}
+
+
+#' Approximate uncertainty due to models
+#' 
+#' DETAILED DESCRIPTION
+#' 
+#' @param model.results.soc2 
+#' @param model.results.soc3 
+#' @param conv.iter.soc2 
+#' @param conv.iter.soc3 
+#' @param soc2.prop 
+#' @param soc3.prop 
+#' @return 
+#' @export
+computeModelUncertainty <- function(model.results.soc2,model.results.soc3,
+                                    conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop) {
+  mdl.uncert.mae <-vector()
+  mdl.uncert.me <-vector()
+  for (i in c(1:length(model.results.soc2))) {
+    # print(i) # simulation number
+    
+    # Get data for known values
+    a <- model.results.soc2[[i]][[conv.iter.soc2+1]]$data
+    a <- a[a$known.val==1,]
+    b <- model.results.soc3[[i]][[conv.iter.soc3+1]]$data
+    b <- b[b$known.val==1,]
+    
+    # Get bounded predictions only
+    c <- a$value
+    b <- b[rownames(a),"prediction.raw.bounded"]
+    a <- a$prediction.raw.bounded
+    
+    # Calculations
+    ab <- (soc2.prop * a) + (soc3.prop * b)
+    mdl.uncert.mae <- c(mdl.uncert.mae,ModelMetrics::mae(c,ab))
+    mdl.uncert.me <- c(mdl.uncert.me,mean(c-ab))
+  }
+  
+  return(list(mae.by.sim=mdl.uncert.mae,me.by.sim=mdl.uncert.me,
+              avg.mae=mean(mdl.uncert.mae),avg.me=mean(mdl.uncert.me)))
 }

@@ -2,9 +2,9 @@
 % Please edit documentation in R/functions_analysis.R
 \name{computeEVs}
 \alias{computeEVs}
-\title{SUMMARY}
+\title{Compute expected values for each observation}
 \usage{
-computeEVs(simulations)
+computeEVs(blended.results)
 }
 \value{
 

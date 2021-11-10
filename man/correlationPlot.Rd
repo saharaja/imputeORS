@@ -2,9 +2,12 @@
 % Please edit documentation in R/functions_analysis.R
 \name{correlationPlot}
 \alias{correlationPlot}
-\title{SUMMARY}
+\title{Compute correlation of EVs, and plot relevant heatmap (grouped by SOC2 code)}
 \usage{
-correlationPlot(simulations)
+correlationPlot(blended.results, print.plot = TRUE)
+}
+\arguments{
+\item{print.plot}{}
 }
 \value{
 

@@ -7,6 +7,13 @@ iteration}
 \usage{
 computeMeanPredictions(simulations, iteration, ors.data.sims)
 }
+\arguments{
+\item{simulations}{}
+
+\item{iteration}{}
+
+\item{ors.data.sims}{}
+}
 \value{
 
 }

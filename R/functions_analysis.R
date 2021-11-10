@@ -178,20 +178,91 @@ computeOverlap <- function(blended.results,jobA,jobB,print.plot=TRUE) {
   # Plot
   m.ab <- mean(jobAB$overlap)
   sd.ab <- sd(jobAB$overlap)
-  p.ab <- ggplot(jobAB) + geom_bar(aes(x=as.factor(additive_group),y=overlap),stat="identity") + 
-    scale_x_discrete(name="Additive Group (Requirement)") + 
-    scale_y_continuous(name="Overlap",breaks=seq(0,1,0.25),limits=c(0,1)) +
-    geom_hline(yintercept=m.ab,linetype="dashed",color="red") +
-    geom_hline(yintercept=m.ab+sd.ab,linetype="dashed",color="grey") +
-    geom_hline(yintercept=m.ab-sd.ab,linetype="dashed",color="grey") +
-    ggtitle(label=paste(jobA," vs. ",jobB,sep="")) + theme_bw()
+  p.ab <- ggplot2::ggplot(jobAB) + ggplot2::geom_bar(aes(x=as.factor(additive_group),y=overlap),stat="identity") + 
+    ggplot2::scale_x_discrete(name="Additive Group (Requirement)") + 
+    ggplot2::scale_y_continuous(name="Overlap",breaks=seq(0,1,0.25),limits=c(0,1)) +
+    ggplot2::geom_hline(yintercept=m.ab,linetype="dashed",color="red") +
+    ggplot2::geom_hline(yintercept=m.ab+sd.ab,linetype="dashed",color="grey") +
+    ggplot2::geom_hline(yintercept=m.ab-sd.ab,linetype="dashed",color="grey") +
+    ggplot2::ggtitle(label=paste(jobA," vs. ",jobB,sep="")) + ggplot2::theme_bw()
   
   if (print.plot) {
-    ggsave(paste("overlap_",jobA,"-v-",jobB,".png",sep=""),plot=p.ab,width=10,height=4,units="in")
+    ggplot2::ggsave(paste("overlap_",jobA,"-v-",jobB,".png",sep=""),plot=p.ab,width=10,height=4,units="in")
   }
   
   return(list(jobs.data=data.ab,
               overlap=jobAB,
               plot=p.ab))
+}
+
+
+#' Standardize expected values, and generate plot
+#' 
+#' DETAILED DESCRIPTION
+#'
+#' @param blended.results
+#' @param print.plot 
+#' @return 
+#' @export
+standardizeEVs <- function(blended.results,print.plot=TRUE) {
+  # Create combined Lifting/carrying and Reaching additive groups (for plotting)
+  LC <- blended.results[blended.results$requirement=="Lifting/carrying",]
+  LC$additive_group <- "LC"
+  R <- blended.results[blended.results$requirement=="Reaching",]
+  R$additive_group <- "R"
+  blended.results.LCR <- rbind(blended.results,LC,R)
+  
+  # Standardize expected values by requirement
+  expected.vals <- imputeORS::computeEVs(blended.results.LCR)
+  std.expectVal <- apply(expected.vals,1,robustHD::standardize,centerFun=mean,scaleFun=sd)
+  
+  # Plot standardized expected values
+  p <- ggplot2::ggplot(reshape2::melt(std.expectVal),aes(x=as.factor(Var2),y=value)) + 
+    ggplot2::geom_point(position=position_jitter(width=0.4),color="green",alpha=0.05) + 
+    ggplot2::geom_boxplot(outlier.colour="blue",alpha=0.6) + 
+    ggplot2::geom_point(y=0,color="red") + 
+    ggplot2::scale_x_discrete(name="Additive Group (Requirement)") + 
+    ggplot2::scale_y_continuous(name="Standardized Expected Value") + 
+    ggplot2::ggtitle(label="Standardized Expected Values, by Requirement") + 
+    ggplot2::theme_bw() + ggplot2::theme(legend.position = "none")
+  
+  if (print.plot) {
+    ggplot2::ggsave("std-EV-by-req.png",p,width=10,height=4,units="in")
+  }
+ 
+  return(list(expected.vals=expected.vals,
+              std.expectVal=std.expectVal,
+              stdEV.plot=p)) 
+}
+
+
+#' Calculate differences in standardized EVs between two jobs, and generate plot
+#' 
+#' DETAILED DESCRIPTION
+#'
+#' @param blended.results
+#' @param jobA
+#' @param jobB
+#' @param print.plot 
+#' @return 
+#' @export
+computeStdEVdiff <- function(blended.results,jobA,jobB,print.plot=TRUE) {
+  # Get standardized EVs
+  stdEV <- imputeORS::standardizeEVs(blended.results,print.plot=FALSE)[[2]]
+  
+  # Compute differences in standardized EVs
+  diff.std.ev <- stdEV[jobA,]-stdEV[jobB,]
+  diff.std.ev <- data.frame(diff=diff.std.ev,adg=names(diff.std.ev))
+  
+  # Generate/plot
+  p <- ggplot2::ggplot(diff.std.ev) + ggplot2::geom_bar(aes(y=diff,x=as.factor(adg)),stat="identity") + 
+    ggplot2::scale_x_discrete(name="Additive Group (Requirement)") + 
+    ggplot2::scale_y_continuous(name="Standardized Difference",breaks=seq(-7,7,1),limits=c(-7,7)) +
+    ggplot2::ggtitle(label=paste(jobA," vs. ",jobB,sep="")) + ggplot2::theme_bw()
+  if (print.plot) {
+    ggplot2::ggsave(paste("stdEVdiff_",jobA,"-v-",jobB,".png",sep=""),plot=p,width=10,height=4,units="in")
+  }
+  
+  return(list(diff.vals=diff.std.ev,diff.plot=p))
 }
 

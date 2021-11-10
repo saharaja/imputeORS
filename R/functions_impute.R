@@ -437,9 +437,9 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
 #' 
 #' DETAILED DESCRIPTION
 #'
-#' @param simulations
-#' @param iteration
-#' @param ors.data.sims
+#' @param simulations 
+#' @param iteration 
+#' @param ors.data.sims 
 #' @return 
 #' @export
 computeMeanPredictions <- function(simulations,iteration,ors.data.sims) {

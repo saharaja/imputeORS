@@ -46,7 +46,7 @@
 #' 
 #' The above procedure is completed per requirement, per SOC group. All guesses
 #' are then adjusted to adhere to boundary conditions on the data (all estimates
-#' must be in the range [0,1], and the sum of all estimates within an 
+#' must be in the range \[0,1\], and the sum of all estimates within an 
 #' occupational group must be <=1). Note that the modeling weights associated 
 #' with guessed values are altered based on which of the three cases they fall 
 #' into, with those falling in cases 1 and 3 receiving higher weights, and those
@@ -289,7 +289,7 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 #' prediction (Iteration 0) is the result of the smart guessing procedure. All
 #' subsequent iterations rely on XGBoost to produce preliminary predictions. 
 #' These predictions are then adjusted to adhere to boundary conditions on the 
-#' data (all estimates must be in the range [0,1], and the sum of all estimates
+#' data (all estimates must be in the range \[0,1\], and the sum of all estimates
 #' within an occupational group must be <=1).
 #'
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
@@ -359,7 +359,7 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
           data.train.split[[i]] <- droplevels(data.train[as.character(data.train[,sg.soc.code])==i,])
         }
         
-        data.train.smart <- lapply(data.train.split,smartGuessKFCV,ors.data,wt.low=0,wt.mid=0.5,wt.high=0.5)
+        data.train.smart <- lapply(data.train.split,imputeORS::smartGuessKFCV,ors.data,wt.low=0,wt.mid=0.5,wt.high=0.5)
         data.train.smart <- do.call(rbind,data.train.smart)
         rownames(data.train.smart) <- gsub("^[0-9][0-9]*\\.","",rownames(data.train.smart))
         data.train <- data.train.smart[rownames(data.train),]

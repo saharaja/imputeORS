@@ -65,12 +65,11 @@ computeCIs <- function(blended.results,confidence.level=0.95) {
   returnConfInt <- function(distrib,con.lvl=confidence.level) {
     tryCatch(
       {
-        return(c(t.test(distrib,conf.level=con.lvl)$conf.int[1:2],mean(distrib),0))
-        # return(c(confint(lm(unlist(distrib)~1),level=confidence.level)[1:2],mean(distrib),0))   # equivalent method
+        return(c(stats::t.test(distrib,conf.level=con.lvl)$conf.int[1:2],mean(distrib),0))
+        # return(c(stats::confint(stats::lm(unlist(distrib)~1),level=confidence.level)[1:2],mean(distrib),0))   # equivalent method
       } , error=function(e) {
         print(e)
         return(c(NA,NA,mean(distrib),1))
-        # return(c(mean(distrib),mean(distrib),1))
       }
     )
   }
@@ -93,11 +92,11 @@ computeCIs <- function(blended.results,confidence.level=0.95) {
 #' 
 #' For each occupational group, we calculate ELE as an expected value of 
 #' frequency times intensity as follows, where \eqn{\mu_j} is the mean population 
-#' prediction across all the simulations for the \eqn{j_{th}} observation, and 
-#' \eqn{F_j} and \eqn{I_j} are the frequency and intensity of the \eqn{j_{th}} 
+#' prediction across all the simulations for the \eqn{j}th observation, and 
+#' \eqn{F_j} and \eqn{I_j} are the frequency and intensity of the \eqn{j}th 
 #' observation, respectively:
 #' 
-#' \deqn{E=\sum_j{\mu_j * F_j * I_j}}
+#' \deqn{E=\sum(\mu_j * F_j * I_j)}
 #'  
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
@@ -189,16 +188,16 @@ correlationPlot <- function(blended.results,print.plot=TRUE) {
 #' percentages for all jobs, across all requirements. Using this information, we 
 #' can devise a way to measure the requirement "overlap" of any two occupations. 
 #' We do this by taking the product of their estimates to yield a value on the 
-#' interval [0,1]. This produces a way to measure similarity between different
+#' interval \[0,1\]. This produces a way to measure similarity between different
 #' occupations.
 #' 
-#' If \eqn{\omega_{1ir}} is the population mean of the \eqn{i^{th}} level of the 
-#' \eqn{r^{th}} requirement for Job 1 (average of simulation predictions for 
+#' If \eqn{\omega_{1ir}} is the population mean of the \eqn{i}th level of the 
+#' \eqn{r}th requirement for Job 1 (average of simulation predictions for 
 #' missing values, and actual value for known estimates), and \eqn{\omega_{2ir}} 
-#' is the same for Job 2, then we say that the overlap of \eqn{r^{th}} requirement 
+#' is the same for Job 2, then we say that the overlap of \eqn{r}th requirement 
 #' (\eqn{O_r}) for these two jobs is:
 #' 
-#' \deqn{O_r = \sum_i{\omega_{1ir}*\omega_{2ir}}}
+#' \deqn{O_r = \sum(\omega_{1ir}*\omega_{2ir})}
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
@@ -238,7 +237,7 @@ computeOverlap <- function(blended.results,jobA,jobB,print.plot=TRUE) {
   
   # Plot
   m.ab <- mean(jobAB$overlap)
-  sd.ab <- sd(jobAB$overlap)
+  sd.ab <- stats::sd(jobAB$overlap)
   p.ab <- ggplot2::ggplot(jobAB) + ggplot2::geom_bar(aes(x=as.factor(additive_group),y=overlap),stat="identity") + 
     ggplot2::scale_x_discrete(name="Additive Group (Requirement)") + 
     ggplot2::scale_y_continuous(name="Overlap",breaks=seq(0,1,0.25),limits=c(0,1)) +
@@ -287,7 +286,7 @@ standardizeEVs <- function(blended.results,combine.adgs=TRUE,print.plot=TRUE) {
   
   # Standardize expected values by requirement
   expected.vals <- imputeORS::computeEVs(blended.results)
-  std.expectVal <- apply(expected.vals,1,robustHD::standardize,centerFun=mean,scaleFun=sd)
+  std.expectVal <- apply(expected.vals,1,robustHD::standardize,centerFun=mean,scaleFun=stats::sd)
   
   # Plot standardized expected values
   p <- ggplot2::ggplot(reshape2::melt(std.expectVal),aes(x=as.factor(Var2),y=value)) + 

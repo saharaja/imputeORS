@@ -81,7 +81,7 @@ approach described in case 2.
 
 The above procedure is completed per requirement, per SOC group. All guesses
 are then adjusted to adhere to boundary conditions on the data (all estimates
-must be in the range \link{0,1}, and the sum of all estimates within an
+must be in the range [0,1], and the sum of all estimates within an
 occupational group must be <=1). Note that the modeling weights associated
 with guessed values are altered based on which of the three cases they fall
 into, with those falling in cases 1 and 3 receiving higher weights, and those

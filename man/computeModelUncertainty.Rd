@@ -47,7 +47,7 @@ At each iteration, predictions are generated for the known values. However,
 during the adjustment phase, these predictions are reset to the actual value
 associated with these known observations in preparation for the next
 iteration. Prior to this reset however, the predictions are corrected to
-adhere to boundary constraints (all estimates must be on the interval \link{0,1}).
+adhere to boundary constraints (all estimates must be on the interval [0,1]).
 These boundary-corrected predictions are saved for each iteration, and then
 used to calculate the MAE and ME of known value predictions. This is done for
 each simulation at the convergence iteration, and then the average MAE and ME

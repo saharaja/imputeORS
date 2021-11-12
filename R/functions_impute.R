@@ -46,7 +46,7 @@
 #' 
 #' The above procedure is completed per requirement, per SOC group. All guesses
 #' are then adjusted to adhere to boundary conditions on the data (all estimates
-#' must be in the range [0,1], and the sum of all estimates within an 
+#' must be in the range \[0,1\], and the sum of all estimates within an 
 #' occupational group must be <=1). Note that the modeling weights associated 
 #' with guessed values are altered based on which of the three cases they fall 
 #' into, with those falling in cases 1 and 3 receiving higher weights, and those
@@ -282,7 +282,7 @@ smartGuess <- function(ors.data.sims,sim.no,
 #' prediction (Iteration 0) is the result of the smart guessing procedure. All
 #' subsequent iterations rely on XGBoost to produce preliminary predictions. 
 #' These predictions are then adjusted to adhere to boundary conditions on the 
-#' data (all estimates must be in the range [0,1], and the sum of all estimates
+#' data (all estimates must be in the range \[0,1\], and the sum of all estimates
 #' within an occupational group must be <=1).
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
@@ -314,7 +314,7 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
   sim.list <- list()
   for (i in c(1:n.sims)) {
     print(paste("Smart guessing for simulation ",i," (Iteration 0)...",sep=""))
-    sim.list[[i]] <- do.call(rbind,lapply(ors.data.sims.split,smartGuess,sim.no=i))
+    sim.list[[i]] <- do.call(rbind,lapply(ors.data.sims.split,imputeORS::smartGuess,sim.no=i))
     rownames(sim.list[[i]]) <- gsub("^[0-9][0-9]*\\.","",rownames(sim.list[[i]]))
   }
   
@@ -556,7 +556,7 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
 #' during the adjustment phase, these predictions are reset to the actual value 
 #' associated with these known observations in preparation for the next 
 #' iteration. Prior to this reset however, the predictions are corrected to 
-#' adhere to boundary constraints (all estimates must be on the interval [0,1]).
+#' adhere to boundary constraints (all estimates must be on the interval \[0,1\]).
 #' These boundary-corrected predictions are saved for each iteration, and then 
 #' used to calculate the MAE and ME of known value predictions. This is done for
 #' each simulation at the convergence iteration, and then the average MAE and ME

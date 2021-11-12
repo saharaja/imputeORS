@@ -25,9 +25,9 @@ estimate results in a low level of effort, and the converse for high.
 \details{
 For each occupational group, we calculate ELE as an expected value of
 frequency times intensity as follows, where \eqn{\mu_j} is the mean population
-prediction across all the simulations for the \eqn{j_{th}} observation, and
-\eqn{F_j} and \eqn{I_j} are the frequency and intensity of the \eqn{j_{th}}
+prediction across all the simulations for the \eqn{j}th observation, and
+\eqn{F_j} and \eqn{I_j} are the frequency and intensity of the \eqn{j}th
 observation, respectively:
 
-\deqn{E=\sum_j{\mu_j * F_j * I_j}}
+\deqn{E=\sum(\mu_j * F_j * I_j)}
 }

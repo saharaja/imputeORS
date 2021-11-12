@@ -17,7 +17,7 @@ iterateModel(
 \arguments{
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, as well as simulated
-data (output of getSimulations())}
+data (output of computeSimulations())}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 

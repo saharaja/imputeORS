@@ -37,7 +37,7 @@ default is the column names of test.fold.data}
 }
 \value{
 Returns a list of plot objects, with one object for each iteration;
-optionally produces a plot (.png file)
+optionally produces a plot (.png file) of all iterations
 }
 \description{
 For each iteration, plot the predicted values vs. actual values of

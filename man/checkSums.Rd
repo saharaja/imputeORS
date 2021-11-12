@@ -6,9 +6,21 @@
 \usage{
 checkSums(ors.data, column.name = "prediction")
 }
-\value{
+\arguments{
+\item{ors.data}{Data frame containing ORS data, including estimates}
 
+\item{column.name}{Name of column containing estimates; default is
+"prediction"}
+}
+\value{
+A vector whose length is the number of occupational groups present in
+the data, with each entry being the sum of the estimates associated with a
+given occupational group
 }
 \description{
-DETAILED DESCRIPTION
+This is an accessory function to ensure that the sum of the estimates for
+each of the occupational groups is 1. If the input data is the original (i.e.
+incomplete) data, then all the sums should be <=1. If the input data is the
+results of smart guessing or imputing the missing values, the sums should all
+be (approximately) 1.
 }

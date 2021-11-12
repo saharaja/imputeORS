@@ -7,11 +7,37 @@
 computeOverlap(blended.results, jobA, jobB, print.plot = TRUE)
 }
 \arguments{
-\item{print.plot}{}
+\item{blended.results}{Blended predictions from imputation models, calculated
+at convergence iterations and blending proportions computed by
+computeBlendingRatio() (output of blendImputations())}
+
+\item{jobA}{First job to compare}
+
+\item{jobB}{Second job to compare}
+
+\item{print.plot}{Should plot file (.png) be generated; default is TRUE
+(create plot file)}
 }
 \value{
-
+A list of length three, containing a data frame with all the data
+pertaining to the specified occupations, a data frame of the overlap values
+for these occupations by requirement, and a plot object displaying this
+overlap values; optionally produces a plot (.png file) of the overlap
 }
 \description{
-DETAILED DESCRIPTION
+Thanks to imputation, we arrive at a full distribution of population
+percentages for all jobs, across all requirements. Using this information, we
+can devise a way to measure the requirement "overlap" of any two occupations.
+We do this by taking the product of their estimates to yield a value on the
+interval \link{0,1}. This produces a way to measure similarity between different
+occupations.
+}
+\details{
+If \eqn{\omega_{1ir}} is the population mean of the \eqn{i^{th}} level of the
+\eqn{r^{th}} requirement for Job 1 (average of simulation predictions for
+missing values, and actual value for known estimates), and \eqn{\omega_{2ir}}
+is the same for Job 2, then we say that the overlap of \eqn{r^{th}} requirement
+(\eqn{O_r}) for these two jobs is:
+
+\deqn{O_r = \sum_i{\omega_{1ir}*\omega_{2ir}}}
 }

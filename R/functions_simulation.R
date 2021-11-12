@@ -57,7 +57,7 @@ stdErrMC<- function(mu,stdev,n=10){
 #' weights (output of getPredictors())
 #' @return Original input, with simulated data appended
 #' @export
-getSimulations <-function(df){
+computeSimulations <-function(df){
   inCount=0
   outCount=0
   rownames(df)=NULL

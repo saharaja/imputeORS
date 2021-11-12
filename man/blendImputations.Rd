@@ -11,29 +11,47 @@ blendImputations(
   conv.iter.soc3,
   soc2.prop,
   soc3.prop,
+  ors.data.sims,
   write.files = FALSE
 )
 }
 \arguments{
-\item{model.results.soc2}{}
+\item{model.results.soc2}{Results of iterative modeling, usually from SOC2
+smart guessed data (output of iterateModel())}
 
-\item{model.results.soc3}{}
+\item{model.results.soc3}{Results of iterative modeling, usually from SOC3
+smart guessed data (output of iterateModel())}
 
-\item{conv.iter.soc2}{}
+\item{conv.iter.soc2}{Convergence iteration of model.results.soc2 (calculated
+by computeConvergence())}
 
-\item{conv.iter.soc3}{}
+\item{conv.iter.soc3}{Convergence iteration of model.results.soc3 (calculated
+by computeConvergence())}
 
-\item{soc2.prop}{}
+\item{soc2.prop}{Contribution of model.results.soc2 to blending (calculated
+by computeBlendingRatio())}
 
-\item{soc3.prop}{}
+\item{soc3.prop}{Contribution of model.results.soc3 to blending (calculated
+by computeBlendingRatio())}
 
-\item{write.files}{}
+\item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
+all records, including both known and missing estimates, as well as simulated
+data (output of computeSimulations())}
 
-\item{ors.data.sims}{}
+\item{write.files}{Should results be written to .csv and .Rdata files;
+default is FALSE (do not write files)}
 }
 \value{
-
+Data frame containing all predictors for each observation, along with
+blended results, i.e. simulated values for known estimates, weighted average
+of predicted values from each simulation at the specified iterations for
+missing estimates, and a mean value calculated across all simulations (for
+known estimates, this is simply the actual value)
 }
 \description{
-DETAILED DESCRIPTION
+Our method involves imputing missing values using both SOC2 and SOC3 smart
+guessed data as the initial prediction (Iteration 0). These two models'
+results are then blended using the convergence and blending information
+calculated from the k-folds cross validation stage of the analysis. These
+blended results constitute the final imputations for the missing values.
 }

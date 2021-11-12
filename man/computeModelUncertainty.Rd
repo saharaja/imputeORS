@@ -14,21 +14,46 @@ computeModelUncertainty(
 )
 }
 \arguments{
-\item{model.results.soc2}{}
+\item{model.results.soc2}{Results of iterative modeling, usually from SOC2
+smart guessed data (output of iterateModel())}
 
-\item{model.results.soc3}{}
+\item{model.results.soc3}{Results of iterative modeling, usually from SOC3
+smart guessed data (output of iterateModel())}
 
-\item{conv.iter.soc2}{}
+\item{conv.iter.soc2}{Convergence iteration of model.results.soc2 (calculated
+by computeConvergence())}
 
-\item{conv.iter.soc3}{}
+\item{conv.iter.soc3}{Convergence iteration of model.results.soc3 (calculated
+by computeConvergence())}
 
-\item{soc2.prop}{}
+\item{soc2.prop}{Contribution of model.results.soc2 to blending (calculated
+by computeBlendingRatio())}
 
-\item{soc3.prop}{}
+\item{soc3.prop}{Contribution of model.results.soc3 to blending (calculated
+by computeBlendingRatio())}
 }
 \value{
-
+A list of length four, containing the MAE by simulation, the ME by
+simulation, the average MAE across simulations, and the average ME across
+simulations
 }
 \description{
-DETAILED DESCRIPTION
+One of the major sources of uncertainty in this analysis is from the models
+themselves. We attempt to quantify this using the predictions generated for
+the known values.
+}
+\details{
+At each iteration, predictions are generated for the known values. However,
+during the adjustment phase, these predictions are reset to the actual value
+associated with these known observations in preparation for the next
+iteration. Prior to this reset however, the predictions are corrected to
+adhere to boundary constraints (all estimates must be on the interval \link{0,1}).
+These boundary-corrected predictions are saved for each iteration, and then
+used to calculate the MAE and ME of known value predictions. This is done for
+each simulation at the convergence iteration, and then the average MAE and ME
+across simulations is also calculated.
+
+Note that the predictions used to complete this calculation are the result of
+blending the boundary-corrected predictions according to the proportions
+calculated in the k-folds cross validation portion of the analysis.
 }

@@ -1,6 +1,5 @@
 # Functions for imputing missing estimates
 
-
 #' Smart Guessing for missing estimates
 #'
 #' Function to perform "smart guessing" procedure to generate initial guess for 
@@ -56,7 +55,7 @@
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, as well as simulated
-#' data (output of getSimulations())
+#' data (output of computeSimulations())
 #' @param sim.no Which simulation to run smart guessing on
 #' @param wt.low Model weight to assign to low-confidence smart guesses; default
 #' is 0
@@ -288,7 +287,7 @@ smartGuess <- function(ors.data.sims,sim.no,
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, as well as simulated
-#' data (output of getSimulations())
+#' data (output of computeSimulations())
 #' @param n.iter Number of times to iterate/adjust the model
 #' @param weight.step Increment by which to increase modeling weight of test 
 #' fold data with each iteration
@@ -435,21 +434,31 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
 #' Get predictions (one per simulation) and overall mean prediction for a given
 #' iteration
 #' 
-#' DETAILED DESCRIPTION
+#' After iteratively predicting the missing values, a mean estimate per 
+#' observation is calculated by taking the average of the predictions for each
+#' simulation at a given iteration. Note that for known values, the mean 
+#' estimate is simply the actual value associated with that observation (from 
+#' which the simulated values are derived).
 #'
-#' @param simulations 
-#' @param iteration 
-#' @param ors.data.sims 
-#' @return 
+#' @param model.results Results of iterative modeling (output of iterateModel())
+#' @param iteration Iteration at which to compute mean estimates; usually, this 
+#' will be the convergence iteration of model.results
+#' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
+#' all records, including both known and missing estimates, as well as simulated
+#' data (output of computeSimulations())
+#' @return Data frame containing all predictors for each observation, along with
+#' simulated values for known estimates, predicted values from each simulation 
+#' at the specified iteration for missing estimates, and a mean value calculated
+#' across all simulations (for known estimates, this is simply the actual value)
 #' @export
-computeMeanPredictions <- function(simulations,iteration,ors.data.sims) {
+computeMeanPredictions <- function(model.results,iteration,ors.data.sims) {
   # Compute convergence iterations and get relevant predictions
   # Uses population means - mean of simulation predictions for missing observations, actual values for known
-  n.sim <- length(simulations)
-  data <- data.frame(matrix(nrow=nrow(simulations[[1]]$iteration0$data),ncol=n.sim),
-                     row.names=rownames(simulations[[1]]$iteration0$data))
+  n.sim <- length(model.results)
+  data <- data.frame(matrix(nrow=nrow(model.results[[1]]$iteration0$data),ncol=n.sim),
+                     row.names=rownames(model.results[[1]]$iteration0$data))
   colnames(data) <- c(paste("sim",c(1:n.sim),".prediction",sep=""))
-  data <- cbind(simulations[[1]]$iteration0$data,data)
+  data <- cbind(model.results[[1]]$iteration0$data,data)
   data <- data[,-grep("^prediction",colnames(data))]
   data <- data[,-grep("value",colnames(data))]
   data <- data[,-grep("weight",colnames(data))]
@@ -458,7 +467,7 @@ computeMeanPredictions <- function(simulations,iteration,ors.data.sims) {
   if (is.numeric(iteration)) {
     print(paste("Calculating mean prediction at iteration",iteration))
     for (i in c(1:n.sim)) {
-      data[,paste("sim",i,".prediction",sep="")] <- simulations[[i]][[iteration+1]]$data$prediction
+      data[,paste("sim",i,".prediction",sep="")] <- model.results[[i]][[iteration+1]]$data$prediction
     }
   }
   else {
@@ -475,21 +484,38 @@ computeMeanPredictions <- function(simulations,iteration,ors.data.sims) {
 
 #' Blend model results according to calculated proportions
 #'
-#' DETAILED DESCRIPTION
+#' Our method involves imputing missing values using both SOC2 and SOC3 smart 
+#' guessed data as the initial prediction (Iteration 0). These two models' 
+#' results are then blended using the convergence and blending information 
+#' calculated from the k-folds cross validation stage of the analysis. These
+#' blended results constitute the final imputations for the missing values.
 #'
-#' @param model.results.soc2 
-#' @param model.results.soc3 
-#' @param conv.iter.soc2 
-#' @param conv.iter.soc3 
-#' @param soc2.prop 
-#' @param soc3.prop 
-#' @param ors.data.sims 
-#' @param write.files 
-#' @return 
+#' @param model.results.soc2 Results of iterative modeling, usually from SOC2 
+#' smart guessed data (output of iterateModel())
+#' @param model.results.soc3 Results of iterative modeling, usually from SOC3 
+#' smart guessed data (output of iterateModel())
+#' @param conv.iter.soc2 Convergence iteration of model.results.soc2 (calculated 
+#' by computeConvergence())
+#' @param conv.iter.soc3 Convergence iteration of model.results.soc3 (calculated 
+#' by computeConvergence())
+#' @param soc2.prop Contribution of model.results.soc2 to blending (calculated 
+#' by computeBlendingRatio())
+#' @param soc3.prop Contribution of model.results.soc3 to blending (calculated 
+#' by computeBlendingRatio())
+#' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
+#' all records, including both known and missing estimates, as well as simulated
+#' data (output of computeSimulations())
+#' @param write.files Should results be written to .csv and .Rdata files; 
+#' default is FALSE (do not write files)
+#' @return Data frame containing all predictors for each observation, along with
+#' blended results, i.e. simulated values for known estimates, weighted average
+#' of predicted values from each simulation at the specified iterations for 
+#' missing estimates, and a mean value calculated across all simulations (for 
+#' known estimates, this is simply the actual value)
 #' @export
 blendImputations <- function(model.results.soc2,model.results.soc3,
                              conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop,
-                             write.files=FALSE) {
+                             ors.data.sims,write.files=FALSE) {
   
   # Format results from model 1
   model.summary.soc2 <- imputeORS::computeMeanPredictions(model.results.soc2,conv.iter.soc2,ors.data.sims)
@@ -522,15 +548,39 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
 
 #' Approximate uncertainty due to models
 #' 
-#' DETAILED DESCRIPTION
+#' One of the major sources of uncertainty in this analysis is from the models 
+#' themselves. We attempt to quantify this using the predictions generated for 
+#' the known values.
 #' 
-#' @param model.results.soc2 
-#' @param model.results.soc3 
-#' @param conv.iter.soc2 
-#' @param conv.iter.soc3 
-#' @param soc2.prop 
-#' @param soc3.prop 
-#' @return 
+#' At each iteration, predictions are generated for the known values. However, 
+#' during the adjustment phase, these predictions are reset to the actual value 
+#' associated with these known observations in preparation for the next 
+#' iteration. Prior to this reset however, the predictions are corrected to 
+#' adhere to boundary constraints (all estimates must be on the interval [0,1]).
+#' These boundary-corrected predictions are saved for each iteration, and then 
+#' used to calculate the MAE and ME of known value predictions. This is done for
+#' each simulation at the convergence iteration, and then the average MAE and ME
+#' across simulations is also calculated.
+#' 
+#' Note that the predictions used to complete this calculation are the result of
+#' blending the boundary-corrected predictions according to the proportions 
+#' calculated in the k-folds cross validation portion of the analysis.
+#' 
+#' @param model.results.soc2 Results of iterative modeling, usually from SOC2 
+#' smart guessed data (output of iterateModel())
+#' @param model.results.soc3 Results of iterative modeling, usually from SOC3 
+#' smart guessed data (output of iterateModel())
+#' @param conv.iter.soc2 Convergence iteration of model.results.soc2 (calculated 
+#' by computeConvergence())
+#' @param conv.iter.soc3 Convergence iteration of model.results.soc3 (calculated 
+#' by computeConvergence())
+#' @param soc2.prop Contribution of model.results.soc2 to blending (calculated 
+#' by computeBlendingRatio())
+#' @param soc3.prop Contribution of model.results.soc3 to blending (calculated 
+#' by computeBlendingRatio())
+#' @return A list of length four, containing the MAE by simulation, the ME by 
+#' simulation, the average MAE across simulations, and the average ME across 
+#' simulations
 #' @export
 computeModelUncertainty <- function(model.results.soc2,model.results.soc3,
                                     conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop) {

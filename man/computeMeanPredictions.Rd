@@ -5,18 +5,28 @@
 \title{Get predictions (one per simulation) and overall mean prediction for a given
 iteration}
 \usage{
-computeMeanPredictions(simulations, iteration, ors.data.sims)
+computeMeanPredictions(model.results, iteration, ors.data.sims)
 }
 \arguments{
-\item{simulations}{}
+\item{model.results}{Results of iterative modeling (output of iterateModel())}
 
-\item{iteration}{}
+\item{iteration}{Iteration at which to compute mean estimates; usually, this
+will be the convergence iteration of model.results}
 
-\item{ors.data.sims}{}
+\item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
+all records, including both known and missing estimates, as well as simulated
+data (output of computeSimulations())}
 }
 \value{
-
+Data frame containing all predictors for each observation, along with
+simulated values for known estimates, predicted values from each simulation
+at the specified iteration for missing estimates, and a mean value calculated
+across all simulations (for known estimates, this is simply the actual value)
 }
 \description{
-DETAILED DESCRIPTION
+After iteratively predicting the missing values, a mean estimate per
+observation is calculated by taking the average of the predictions for each
+simulation at a given iteration. Note that for known values, the mean
+estimate is simply the actual value associated with that observation (from
+which the simulated values are derived).
 }

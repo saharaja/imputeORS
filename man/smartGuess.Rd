@@ -16,7 +16,7 @@ smartGuess(
 \arguments{
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, as well as simulated
-data (output of getSimulations())}
+data (output of computeSimulations())}
 
 \item{sim.no}{Which simulation to run smart guessing on}
 

@@ -18,7 +18,7 @@ iterateModelKFCV(
 \arguments{
 \item{ors.data}{Original data augmented with relevant predictors, i.e. all
 records, including both known and missing estimates (output of
-getPredictors(), or getSimulations())}
+getPredictors(), or computeSimulations())}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 
@@ -38,7 +38,7 @@ runs; default is to generate a new set of folds}
 "upSOC3", or "upSOC4"}
 }
 \value{
-A list of length 2, containing a list of hold out indices for each
+A list of length two, containing a list of hold out indices for each
 test fold, and the results of iterative modeling
 }
 \description{

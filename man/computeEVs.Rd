@@ -6,9 +6,28 @@
 \usage{
 computeEVs(blended.results)
 }
+\arguments{
+\item{blended.results}{Blended predictions from imputation models, calculated
+at convergence iterations and blending proportions computed by
+computeBlendingRatio() (output of blendImputations())}
+}
 \value{
-
+A data frame containing ELEs of each occupational groups, arranged
+with requirement (additive groups) as rows and occupation as columns
 }
 \description{
-DETAILED DESCRIPTION
+To compare occupations across requirements, we developed an expected value
+measure we called the "Expected Level of Effort" (ELE). This measure is a
+weighted average of the frequency and intensity times the population estimate
+for the various requirements. A low frequency/low intensity/low population
+estimate results in a low level of effort, and the converse for high.
+}
+\details{
+For each occupational group, we calculate ELE as an expected value of
+frequency times intensity as follows, where \eqn{\mu_j} is the mean population
+prediction across all the simulations for the \eqn{j_{th}} observation, and
+\eqn{F_j} and \eqn{I_j} are the frequency and intensity of the \eqn{j_{th}}
+observation, respectively:
+
+\deqn{E=\sum_j{\mu_j * F_j * I_j}}
 }

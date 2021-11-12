@@ -4,14 +4,27 @@
 \alias{standardizeEVs}
 \title{Standardize expected values, and generate plot}
 \usage{
-standardizeEVs(blended.results, print.plot = TRUE)
+standardizeEVs(blended.results, combine.adgs = TRUE, print.plot = TRUE)
 }
 \arguments{
-\item{print.plot}{}
+\item{blended.results}{Blended predictions from imputation models, calculated
+at convergence iterations and blending proportions computed by
+computeBlendingRatio() (output of blendImputations())}
+
+\item{combine.adgs}{Option to combine the four Lifting/carrying requirements
+and the two Reaching requirements into two aggregate requirements (LC and R,
+respectively); default is TRUE}
+
+\item{print.plot}{Should plot file (.png) be generated; default is TRUE
+(create plot file)}
 }
 \value{
-
+A list of length three, containing a data frame of expected values, a
+matrix of standardized EVs, and a plot object of the standardized EVs;
+optionally produces a plot (.png file) of the standardized EVs
 }
 \description{
-DETAILED DESCRIPTION
+The ELEs calculated by computeEVs() necessarily differ vastly in their
+range and distributions depending on the requirement. Standardizing them
+makes them more readily comparable.
 }

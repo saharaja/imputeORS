@@ -2,16 +2,26 @@
 % Please edit documentation in R/functions_analysis.R
 \name{correlationPlot}
 \alias{correlationPlot}
-\title{Compute correlation of EVs, and plot relevant heatmap (grouped by SOC2 code)}
+\title{Compute correlation of ELEs, and plot relevant heatmap (grouped by SOC2 code)}
 \usage{
 correlationPlot(blended.results, print.plot = TRUE)
 }
 \arguments{
-\item{print.plot}{}
+\item{blended.results}{Blended predictions from imputation models, calculated
+at convergence iterations and blending proportions computed by
+computeBlendingRatio() (output of blendImputations())}
+
+\item{print.plot}{Should plot file (.png) be generated; default is TRUE
+(create plot file)}
 }
 \value{
-
+A list of length four, containing a data frame of expected values, a
+correlation matrix, and two plot objects (one where the individual
+occupations are labeled in addition to the SOC2 group labels, and one where
+they are not); optionally produces a PDF of the heatmap
 }
 \description{
-DETAILED DESCRIPTION
+Produces a heatmap displaying correlation between expected values (ELEs) by
+occupation. The heatmap is arranged according to SOC2 code, so that similar
+occupations are grouped together.
 }

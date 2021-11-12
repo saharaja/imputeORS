@@ -17,9 +17,12 @@ of iterateModelKFCVwSG())}
 (create plot file)}
 }
 \value{
-A list of length 3, containing the contribution of model.results.soc2
-(as a proportion), the contribution of model.results.soc3, and the blended
-predictions of each iteration
+A list of length five, containing the convergence iterations of
+model.results.soc2 and model.results.soc3, the contributions of
+model.results.soc2 and model.results.soc3 (as proportions), and the blended
+predictions of each iteration, which can be fed to plotTestFolds();
+optionally produces a plot (.png file) of RMSE of blended predictions at
+convergence
 }
 \description{
 Our procedure involves running the model twice over. In the first run, the

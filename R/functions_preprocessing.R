@@ -519,3 +519,21 @@ setDefaultModelingWeights <- function(ors.data,unknown.weight=0.5) {
   
   return(ors.data)
 }
+
+#' Get raw ORS data from BLS
+#'
+#' Observations that were missing in the data (i.e., no associated record or 
+#' estimate) are generated here.
+#' This is done by "completing" the data using tidyr::complete.
+#'
+#' @param URL pointing to excel data file at BLS, default is https://www.bls.gov/ors/xlsx/2018_excel_output.xlsx
+#' @return Data from BLS (completed data)
+#' @export
+getORS <- function(orsLink="https://www.bls.gov/ors/xlsx/2018_excel_output.xlsx") {
+  url1<-orsLink
+  p1f <- tempfile()
+  download.file(url1, p1f, mode="wb")
+  ors<-readxl::read_excel(path = p1f,sheet=2)
+  return(ors)
+}
+  

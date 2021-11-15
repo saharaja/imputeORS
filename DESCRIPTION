@@ -19,6 +19,7 @@ Imports:
     doParallel,
     dplyr,
     tidyr,
+    tidyverse,
     forcats,
     reshape,
     Matrix,

@@ -1,13 +1,23 @@
 Package: imputeORS
-Title: What the Package Does (One Line, Title Case)
+Title: Impute Missing Values in the BLS Occupational Requirements Survey
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    c(person(given = "Debjani",
+           family = "Saha",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           #comment = c(ORCID = "YOUR-ORCID-ID"),
+           email = "debjani@ruxton.ai"),
+      person(given = "Terry",
+           family = "Leitch",
+           role = c("aut"),
+           #comment = c(ORCID = "YOUR-ORCID-ID"),
+           email = "terry@ruxton.ai"))
+Description: This package provides to tools to impute missing values in the
+    Occupational Requirements Survey administered by the Bureau of Labor 
+    Statistics. It uses an iterative, machine learning based approach. The 
+    package contains functions to retrieve, process, and analyze the data, and 
+    produces useful visualizations of both the iterative process and the final 
+    imputed results.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to
     pick a license
 Encoding: UTF-8

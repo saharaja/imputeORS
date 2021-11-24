@@ -2,7 +2,6 @@
 
 #' Train-test approach for model tuning
 #'
-#' FIX #######################
 #' Function to do train-test modeling in an iterative fashion, for the purposes 
 #' of model tuning. The first prediction (Iteration 0) is just the naive guess. 
 #' All subsequent iterations rely on XGBoost to produce preliminary predictions. 
@@ -64,6 +63,7 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
       # Binary indicator of test fold
       data.test$is.test <- 1
       
+      # Naive Guess:
       # For observations in test set, use averaged percent remaining for value
       # This is simply the naive guess (initial prediction)
       # Have to recalculate percent remaining based on data in test vs. training sets
@@ -80,7 +80,7 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
             data.test[rownames(current.test),"prediction"] <- new.pct.remaining/(sum(is.na(current.full$value)) + nrow(current.test))
             data.test[rownames(current.test),"lower_bound"] <- 0
             data.test[rownames(current.test),"upper_bound"] <- new.pct.remaining
-            data.test[rownames(current.test),"weight"] <-  0 #######################
+            data.test[rownames(current.test),"weight"] <-  0.25
           }
         }
       }
@@ -90,10 +90,6 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
       
       # Make sure only true guesses have weight != 1
       data.train[which(data.train$prediction==data.train$value),"weight"] <- 1
-      
-      # # Reset values #######################
-      # data.train$value <- data.train$orig.value
-      # data.train$orig.value <- NULL
       
       # Return predictions vs. actual values, data, and fold number
       # Initial iteration (0) is just naive guessing
@@ -113,7 +109,7 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
       if (iter>1) {
         data.train[data.train$weight<1,"weight"] <- data.train[data.train$weight<1,"weight"] + weight.step
         data.train[which(data.train$weight<1 & data.train$weight>=0.75),"weight"] <- 0.75   # cap at 0.75
-        data.train[data.train$weight==weight.step,"weight"] <- 0    # naive guesses get 0
+        # data.train[data.train$weight==weight.step,"weight"] <- 0    # naive guesses get 0 - for when smartGuess is used
       }
       
       # Format data and assign bounds
@@ -173,7 +169,6 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
 
 #' Collate predictions for each iteration for the train-test approach
 #' 
-#' FIX #######################
 #' Takes the results of a train-test run and collates all the test set data. 
 #' The model is generated and iterated over the test set, producing predictions
 #' for about 10% of the data. These predictions are extracted and organized by

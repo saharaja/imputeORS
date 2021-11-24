@@ -13,7 +13,6 @@ getTestSetData(model.results)
 Predictions from the test set, by iteration
 }
 \description{
-FIX #######################
 Takes the results of a train-test run and collates all the test set data.
 The model is generated and iterated over the test set, producing predictions
 for about 10\% of the data. These predictions are extracted and organized by

@@ -38,7 +38,6 @@ A list of length two, containing a list of hold out indices for each
 test fold, and the results of iterative modeling
 }
 \description{
-FIX #######################
 Function to do train-test modeling in an iterative fashion, for the purposes
 of model tuning. The first prediction (Iteration 0) is just the naive guess.
 All subsequent iterations rely on XGBoost to produce preliminary predictions.

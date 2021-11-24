@@ -464,7 +464,7 @@ errorsAndBounding <- function(orsE,orsMnGC) {
 #' @export
 getPredictors <- function(orsMnGCe) {
   # Get mapping for data/predictors
-  load("data/data_mapping_for_predictors.Rdata")  # loads predictors.data
+  predictors.data <- imputeORS:::predictors.data
   
   # Format existing columns as necessary
   orsMnGCe$occupation_text <- as.factor(orsMnGCe$occupation_text)

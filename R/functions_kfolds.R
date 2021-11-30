@@ -645,12 +645,12 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 #' of iterateModelKFCVwSG())
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
 #' (create plot file)
-#' @return A list of length five, containing the convergence iterations of
+#' @return A list of length six, containing the convergence iterations of
 #' model.results.soc2 and model.results.soc3, the contributions of 
-#' model.results.soc2 and model.results.soc3 (as proportions), and the blended
-#' predictions of each iteration, which can be fed to plotTestFolds(); 
-#' optionally produces a plot (.png file) of RMSE of blended predictions at 
-#' convergence
+#' model.results.soc2 and model.results.soc3 (as proportions), the blended
+#' predictions of each iteration (which can be fed to plotTestFolds()), and a 
+#' plot object of the RMSE of blended predictions at convergence; optionally 
+#' produces a plot (.png file) of RMSE of blended predictions at convergence
 #' @export
 computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   # Get aggregated test fold data
@@ -684,14 +684,14 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
   blending.ratios$color <- as.factor(blending.ratios$color)
   
   # Plot
+  p.blend <- ggplot2::ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
+    ggplot2::geom_point(aes(color=color),alpha=0.5) + 
+    ggplot2::scale_color_manual(values=c("grey50","red")) + 
+    ggplot2::labs(title="RMSE of blended predictions (at convergence)") + 
+    ggplot2::theme_bw() + ggplot2::theme(legend.position="none") + 
+    ggplot2::scale_x_continuous("Model 2 contribution",
+                                sec.axis=sec_axis(~ . *-1 + 1,name="Model 3 contribution"))
   if (print.plot) {
-    p.blend <- ggplot2::ggplot(blending.ratios,aes(x=SOC2.contribution,y=RMSE)) + 
-      ggplot2::geom_point(aes(color=color),alpha=0.5) + 
-      ggplot2::scale_color_manual(values=c("grey50","red")) + 
-      ggplot2::labs(title="RMSE of blended predictions (at convergence)") + 
-      ggplot2::theme_bw() + ggplot2::theme(legend.position="none") + 
-      ggplot2::scale_x_continuous("Model 2 contribution",
-                                  sec.axis=sec_axis(~ . *-1 + 1,name="Model 3 contribution"))
     ggplot2::ggsave(paste("kfcv-blended-rmse.png",sep=""),p.blend,width=6,height=3.75)
   }
   
@@ -710,7 +710,8 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
               soc3.conv.iter=conv.iter[2],
               soc2.proportion=soc2.prop,
               soc3.proportion=soc3.prop,
-              test.folds.blended=test.folds.blend))
+              test.folds.blended=test.folds.blend,
+              plot.blend=p.blend))
 }
 
 

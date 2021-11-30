@@ -113,7 +113,7 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
       }
       
       # Format data and assign bounds
-      sparse.train <- xgboost::xgb.DMatrix(data=sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
+      sparse.train <- xgboost::xgb.DMatrix(data=Matrix::sparse.model.matrix(prediction ~ .,data=data.train[,select.cols])[,-1],label=data.train$prediction)
       xgboost::setinfo(sparse.train,'label_lower_bound',data.train$lower_bound)
       xgboost::setinfo(sparse.train,'label_upper_bound',data.train$upper_bound)
       xgboost::setinfo(sparse.train,'weight',data.train$weight)

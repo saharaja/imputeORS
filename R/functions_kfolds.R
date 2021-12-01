@@ -517,9 +517,11 @@ getTestFoldData <- function(model.results) {
 #'
 #' @param test.fold.data Test fold predictions (output of getTestFoldData())
 #' @param verbose Should messages be printed; default is TRUE (print messages)
+#' @param show.plot Should plot of RMSE by iteration be displayed; default is 
+#' TRUE (display plot)
 #' @return Convergence iteration of k-folds cross validation modeling
 #' @export
-computeConvergence <- function(test.fold.data,verbose=TRUE) {
+computeConvergence <- function(test.fold.data,verbose=TRUE,show.plot=TRUE) {
   
   rmse.by.iter <- vector()
   for (i in c(1:(ncol(test.fold.data)-3))) {
@@ -541,7 +543,9 @@ computeConvergence <- function(test.fold.data,verbose=TRUE) {
     cat(rmse.by.iter[1:(length(rmse.by.iter)-1)]-rmse.by.iter[2:length(rmse.by.iter)])
     cat("\n\n")
   }
-  plot(0:(length(rmse.by.iter)-1),rmse.by.iter,xlab="Iteration",ylab="RMSE (prediction vs. actual)")
+  if (show.plot) {
+    plot(0:(length(rmse.by.iter)-1),rmse.by.iter,xlab="Iteration",ylab="RMSE (prediction vs. actual)")
+  }
   
   if (d >= 0.001) {
     cat("Convergence criteria unmet, returning final iteration\n")
@@ -659,9 +663,9 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
   
   # Compute convergence iterations
   cat("Computing convergence for model 1...\n\n")
-  conv.iter.soc2 <- computeConvergence(test.folds.soc2)
+  conv.iter.soc2 <- computeConvergence(test.folds.soc2,verbose=FALSE,show.plot=FALSE)
   cat("Computing convergence for model 2...\n\n")
-  conv.iter.soc3 <- computeConvergence(test.folds.soc3)
+  conv.iter.soc3 <- computeConvergence(test.folds.soc3,verbose=FALSE,show.plot=FALSE)
   cat(paste("Convergence iteration for model 1: ",conv.iter.soc2,"\n",sep=""))
   cat(paste("Convergence iteration for model 2: ",conv.iter.soc3,"\n",sep=""))
   conv.iter <- c(conv.iter.soc2,conv.iter.soc3)

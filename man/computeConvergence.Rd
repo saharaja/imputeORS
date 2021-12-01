@@ -4,12 +4,15 @@
 \alias{computeConvergence}
 \title{Compute convergence iteration}
 \usage{
-computeConvergence(test.fold.data, verbose = TRUE)
+computeConvergence(test.fold.data, verbose = TRUE, show.plot = TRUE)
 }
 \arguments{
 \item{test.fold.data}{Test fold predictions (output of getTestFoldData())}
 
 \item{verbose}{Should messages be printed; default is TRUE (print messages)}
+
+\item{show.plot}{Should plot of RMSE by iteration be displayed; default is
+TRUE (display plot)}
 }
 \value{
 Convergence iteration of k-folds cross validation modeling

@@ -34,10 +34,8 @@ convergence iteration of each model, then computing a weighted average of the
 relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The
 RMSE of these prediction weighted averages were then calculated. The weighted
 average that resulted in the lowest RMSE was selected to determine the
-blending ratio. For example, if the prediction weighted average of 0.45(run1)
-\itemize{
-\item 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
-}
+blending ratio. For example, if the prediction weighted average of 0.45(run1) +
+0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
 }
 \details{
 Note that we specify models based on SOC2 and SOC3 smart guesses to provide a

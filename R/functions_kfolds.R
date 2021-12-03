@@ -636,8 +636,8 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 #' relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The 
 #' RMSE of these prediction weighted averages were then calculated. The weighted
 #' average that resulted in the lowest RMSE was selected to determine the
-#' blending ratio. For example, if the prediction weighted average of 0.45(run1)
-#' + 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
+#' blending ratio. For example, if the prediction weighted average of 0.45(run1) + 
+#' 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
 #' 
 #' Note that we specify models based on SOC2 and SOC3 smart guesses to provide a
 #' concrete example. In reality, the two models are not limited to this specific
@@ -662,11 +662,11 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
   test.folds.soc3 <- getTestFoldData(model.results.soc3)
   
   # Compute convergence iterations
-  cat("Computing convergence for model 1...\n\n")
+  cat("Computing convergence for model 1...\n")
   conv.iter.soc2 <- computeConvergence(test.folds.soc2,verbose=FALSE,show.plot=FALSE)
-  cat("Computing convergence for model 2...\n\n")
+  cat("\nComputing convergence for model 2...\n")
   conv.iter.soc3 <- computeConvergence(test.folds.soc3,verbose=FALSE,show.plot=FALSE)
-  cat(paste("Convergence iteration for model 1: ",conv.iter.soc2,"\n",sep=""))
+  cat(paste("\nConvergence iteration for model 1: ",conv.iter.soc2,"\n",sep=""))
   cat(paste("Convergence iteration for model 2: ",conv.iter.soc3,"\n",sep=""))
   conv.iter <- c(conv.iter.soc2,conv.iter.soc3)
   conv.iter.soc2 <- paste("Prediction",conv.iter.soc2,sep="")

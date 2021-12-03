@@ -18,20 +18,6 @@ getORS <- function(orsLink="https://www.bls.gov/ors/xlsx/2018_excel_output.xlsx"
 }
 
 
-#' Transform raw ORS data
-#'
-#' The data retrieved from BLS website needs to be transformed into the format 
-#' expected by all subsequent preprocessing (and other) functions in this 
-#' package. This function accomplishes this task.
-#'
-#' @param 
-#' @return 
-#' @export
-transformORS <- function() {
-
-}
-
-
 #' Generate synthetic additive groups
 #'
 #' Five synthetic additive groups were manually constructed based on the advice

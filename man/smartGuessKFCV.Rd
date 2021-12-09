@@ -19,7 +19,7 @@ guesses}
 
 \item{ors.data}{Original data augmented with relevant predictors, i.e. all
 records, including both known and missing estimates (output of
-getPredictors(), or computeSimulations())}
+setDefaultModelingWeights(), or computeSimulations())}
 
 \item{wt.low}{Model weight to assign to low-confidence smart guesses; default
 is 0}

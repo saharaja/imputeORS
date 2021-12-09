@@ -6,7 +6,7 @@
 \usage{
 smartGuess(
   ors.data.sims,
-  sim.no,
+  sim.no = NULL,
   wt.low = 0,
   wt.mid = 0.5,
   wt.high = 0.5,
@@ -15,10 +15,11 @@ smartGuess(
 }
 \arguments{
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
-all records, including both known and missing estimates, as well as simulated
-data (output of computeSimulations())}
+all records, including both known and missing estimates, possibly including
+simulated data (output of setDefaultModelingWeights(), or computeSimulations())}
 
-\item{sim.no}{Which simulation to run smart guessing on}
+\item{sim.no}{Assuming simulations are provided, specifies which simulation
+to run smart guessing on; default is NULL (i.e., smart guess on original data)}
 
 \item{wt.low}{Model weight to assign to low-confidence smart guesses; default
 is 0}

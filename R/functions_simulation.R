@@ -54,7 +54,7 @@ stdErrMC<- function(mu,stdev,n=10){
 #' calculate a confidence level for each imputed value.
 #'
 #' @param df Data augmented with relevant predictors and default modeling 
-#' weights (output of getPredictors())
+#' weights (output of setDefaultModelingWeights())
 #' @return Original input, with simulated data appended
 #' @export
 computeSimulations <-function(df){

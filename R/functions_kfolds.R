@@ -57,7 +57,7 @@
 #' guesses
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
 #' records, including both known and missing estimates (output of 
-#' getPredictors(), or computeSimulations())
+#' setDefaultModelingWeights(), or computeSimulations())
 #' @param wt.low Model weight to assign to low-confidence smart guesses; default
 #' is 0
 #' @param wt.mid Model weight to assign to mid-confidence smart guesses; default
@@ -294,7 +294,7 @@ smartGuessKFCV <- function(ors.data.for.sg,ors.data,
 #'
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
 #' records, including both known and missing estimates (output of 
-#' getPredictors(), or computeSimulations())
+#' setDefaultModelingWeights(), or computeSimulations())
 #' @param n.iter Number of times to iterate/adjust the model
 #' @param weight.step Increment by which to increase modeling weight of test 
 #' fold data with each iteration
@@ -312,8 +312,13 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
                              mdl.d=14,mdl.n=200,mdl.e=0.6,
                              fold.list=NULL,sg.soc.code) {
   
-  # Get known values only
-  ors.data.known <- ors.data[ors.data$known.val==1,]
+  # Initialize necessary columns
+  ors.data$is.test <- 0
+  ors.data$orig.value <- ors.data$value
+  
+  # Separate known and missing values
+  ors.data.known <- droplevels(ors.data[which(ors.data$known.val==1),])
+  ors.data.missing <- droplevels(ors.data[which(ors.data$known.val!=1),])
   
   # Initialize list
   model.iterations <- list()
@@ -338,11 +343,8 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
       # 'dopar' will run this on multiple threads (change to just 'do' for synchronous runs)
       cv.results <- foreach::foreach(fold=cv.folds,fold.num=icount(),
                                      .packages=c('Matrix','xgboost','ModelMetrics','imputeORS')) %dopar% {
-        
-        ors.data.known$is.test <- 0
-        ors.data.known$orig.value <- ors.data.known$value
-        
-        # Split data in to test/training folds
+                                      
+        # Split known data in to test/training folds
         data.train <- droplevels(ors.data.known[-fold,]) # Get the opposite of the test observations to train on
         data.test <- droplevels(ors.data.known[fold,])
         data.test$value <- NA
@@ -352,6 +354,9 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
         
         # Merge training and test sets back together
         data.train <- rbind(data.train,data.test)
+
+        # Merge known and missing data back together
+        data.train <- rbind(data.train,ors.data.missing)
         
         # Separate observations by SOC2/3/4 code, and smart guess based on this distribution
         data.train.split <- list()
@@ -359,7 +364,7 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
           data.train.split[[i]] <- droplevels(data.train[as.character(data.train[,sg.soc.code])==i,])
         }
         
-        data.train.smart <- lapply(data.train.split,imputeORS::smartGuessKFCV,ors.data,wt.low=0,wt.mid=0.5,wt.high=0.5)
+        data.train.smart <- lapply(data.train.split,imputeORS::smartGuess,ors.data,wt.low=0,wt.mid=0.5,wt.high=0.5)
         data.train.smart <- do.call(rbind,data.train.smart)
         rownames(data.train.smart) <- gsub("^[0-9][0-9]*\\.","",rownames(data.train.smart))
         data.train <- data.train.smart[rownames(data.train),]
@@ -375,6 +380,7 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
         # Return predictions vs. actual values, data, and fold number
         # Initial iteration (0) is just smart guessing
         list(results=data.frame(actual=data.train$value,current.prediction=data.train$prediction,
+                                is.test=data.train$is.test,known.val=data.train$known.val,
                                 row.names=rownames(data.train)),
              data=data.train,which.test.fold=fold.num)
       }
@@ -437,7 +443,9 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
         
         # Return predictions vs. actual values, model, data, and fold number
         list(results=data.frame(actual=data.train$value,current.prediction=data.train$prediction,
-                                previous.prediction=res$results$current.prediction,row.names=rownames(data.train)),
+                                previous.prediction=res$results$current.prediction,
+                                is.test=data.train$is.test,known.val=data.train$known.val,
+                                row.names=rownames(data.train)),
              model=mdl,data=data.train,which.test.fold=fold.num)
       }
       
@@ -469,10 +477,12 @@ getTestFoldData <- function(model.results) {
   model.iterations <- model.results$model.iterations
   
   # Set up final data frame
-  test.fold.data <- data.frame(fold=rep(NA,nrow(model.iterations[[1]][[1]]$data)),
-                               req.cat=model.iterations[[1]][[1]]$data$req.cat,
-                               actual=model.iterations[[1]][[1]]$data$value,
-                               row.names=rownames(model.iterations[[1]][[1]]$data))
+  template.data <- model.iterations[[1]][[1]]$data[which(model.iterations[[1]][[1]]$data$known.val==1),]
+  test.fold.data <- data.frame(fold=rep(NA,nrow(template.data)),
+                               req.cat=template.data$req.cat,
+                               actual=template.data$value,
+                               row.names=rownames(template.data))
+  rm(template.data)
   
   # By iteration...
   for(i in c(1:length(model.iterations))) {

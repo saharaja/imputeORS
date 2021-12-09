@@ -54,9 +54,10 @@
 #' iterative modeling step.
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
-#' all records, including both known and missing estimates, as well as simulated
-#' data (output of computeSimulations())
-#' @param sim.no Which simulation to run smart guessing on
+#' all records, including both known and missing estimates, possibly including
+#' simulated data (output of setDefaultModelingWeights(), or computeSimulations())
+#' @param sim.no Assuming simulations are provided, specifies which simulation 
+#' to run smart guessing on; default is NULL (i.e., smart guess on original data)
 #' @param wt.low Model weight to assign to low-confidence smart guesses; default
 #' is 0
 #' @param wt.mid Model weight to assign to mid-confidence smart guesses; default
@@ -66,15 +67,16 @@
 #' @param verbose Should messages be printed; default is FALSE (mute messages) 
 #' @return Input data frame, with missing values filled in by smart guesses
 #' @export
-smartGuess <- function(ors.data.sims,sim.no,
+smartGuess <- function(ors.data.sims,sim.no=NULL,
                        wt.low=0,wt.mid=0.5,wt.high=0.5,
                        verbose=FALSE) {
   
+  # If simulations are provided, set the specified simulation column
   if (is.numeric(sim.no)) {
     sim.col <- paste("valsim",sim.no,sep="")
     ors.data.sims$value <- ors.data.sims[,sim.col]
+    ors.data.sims <- ors.data.sims[,-grep("valsim",colnames(ors.data.sims))]
   }
-  ors.data.sims <- ors.data.sims[,-grep("valsim",colnames(ors.data.sims))]
   
   # Pre-populate known/missing values into prediction column
   ors.data.sims$prediction <- ors.data.sims$value

@@ -8,7 +8,7 @@ computeSimulations(df)
 }
 \arguments{
 \item{df}{Data augmented with relevant predictors and default modeling
-weights (output of getPredictors())}
+weights (output of setDefaultModelingWeights())}
 }
 \value{
 Original input, with simulated data appended

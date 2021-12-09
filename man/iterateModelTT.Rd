@@ -17,7 +17,7 @@ iterateModelTT(
 \arguments{
 \item{ors.data}{Original data augmented with relevant predictors, i.e. all
 records, including both known and missing estimates (output of
-getPredictors(), or computeSimulations())}
+setDefaultModelingWeights(), or computeSimulations())}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 

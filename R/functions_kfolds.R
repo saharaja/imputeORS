@@ -108,7 +108,7 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
     }
     else {
       cv.results <- foreach::foreach(res=model.iterations[[iter]],fold.num=icount(),
-                                     .packages=c('Matrix','xgboost','ModelMetrics','imputeORS')) %do% {
+                                     .packages=c('Matrix','xgboost','ModelMetrics','imputeORS')) %dopar% {
         
         # Get data from previous iteration
         data.train <- res$data
@@ -129,8 +129,8 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
         # Fit the model and make predictions
         # Note: https://github.com/uber/causalml/issues/96
         print(paste("Evaluating model ",fold.num,"...",sep=""))
-        mdl <- xgboost::xgboost(data=sparse.train,booster="gbtree",max_depth=mdl.d,eta=mdl.e,
-                                nthread=20,nrounds=mdl.n,objective="reg:squarederror",verbose=0) #####
+        mdl <- xgboost::xgboost(data=sparse.train,booster="gbtree",verbose=0,max_depth=mdl.d,eta=mdl.e,
+                                nthread=20,nrounds=mdl.n,objective="reg:squarederror")
         data.train$prediction <- predict(mdl,newdata=sparse.train)
         
         # Correct/scale predictions based on known information

@@ -131,12 +131,13 @@ computeEVs <- function(blended.results) {
 #' computeBlendingRatio() (output of blendImputations())
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
 #' (create plot file)
+#' @param plot.dim Length of each side of the plot (in inches); default is 6.5
 #' @return A list of length four, containing a data frame of expected values, a 
 #' correlation matrix, and two plot objects (one where the individual 
 #' occupations are labeled in addition to the SOC2 group labels, and one where 
 #' they are not); optionally produces a PDF of the heatmap
 #' @export
-correlationPlot <- function(blended.results,print.plot=TRUE) {
+correlationPlot <- function(blended.results,plot.dim=6.5,print.plot=TRUE) {
   # Compute expected values
   expectVal.matrix <- imputeORS::computeEVs(blended.results)
   
@@ -162,17 +163,17 @@ correlationPlot <- function(blended.results,print.plot=TRUE) {
                                    row_split=substr(rownames(cor.mat),1,2),row_gap=unit(1,"mm"),
                                    column_split=substr(colnames(cor.mat),1,2),column_gap=unit(1,"mm"),
                                    row_title_gp=gpar(fontsize=8),column_title_gp=gpar(fontsize=8),
-                                   width=unit(6.5,"in"),height=unit(6.5,"in"))
+                                   width=unit(plot.dim,"in"),height=unit(plot.dim,"in"))
   p.pub <- ComplexHeatmap::Heatmap(cor.mat,name="Correlation",col=rev(brewer.pal(n=11,name="RdBu")),
                                    cluster_rows=FALSE,cluster_columns=FALSE,
                                    show_row_names=FALSE,show_column_names=FALSE,
                                    row_split=substr(rownames(cor.mat),1,2),row_gap=unit(1,"mm"),
                                    column_split=substr(colnames(cor.mat),1,2),column_gap=unit(1,"mm"),
                                    row_title_gp=gpar(fontsize=8),column_title_gp=gpar(fontsize=8),
-                                   width=unit(6.5,"in"),height=unit(6.5,"in"))
+                                   width=unit(plot.dim,"in"),height=unit(plot.dim,"in"))
   
   if (print.plot) {
-    grDevices::pdf("correlation-heatmap.pdf",width=8.5,height=7)
+    grDevices::pdf("correlation-heatmap.pdf",width=(plot.dim+2),height=(plot.dim+0.5))
     print(p.pub)
     grDevices::dev.off()
   }

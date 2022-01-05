@@ -4,12 +4,14 @@
 \alias{correlationPlot}
 \title{Compute correlation of ELEs, and plot relevant heatmap (grouped by SOC2 code)}
 \usage{
-correlationPlot(blended.results, print.plot = TRUE)
+correlationPlot(blended.results, plot.dim = 6.5, print.plot = TRUE)
 }
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
 computeBlendingRatio() (output of blendImputations())}
+
+\item{plot.dim}{Length of each side of the plot (in inches); default is 6.5}
 
 \item{print.plot}{Should plot file (.png) be generated; default is TRUE
 (create plot file)}

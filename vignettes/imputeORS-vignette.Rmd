@@ -47,6 +47,8 @@ library(imputeORS)
 library(tidyr)
 library(ModelMetrics)
 library(ggplot2)
+library(RColorBrewer)
+library(ComplexHeatmap)
 library(kableExtra)
 library(knitr)
 load("../data/estim_ssa_output_2018.Rdata")
@@ -205,7 +207,7 @@ Following model tuning, we address the original problem: imputation. This is car
 
 ## Simulation (Data Uncertainty) {#simulation}
 
-Simulated data is drawn from a $\beta$ distribution using, for all known observations, the `value` field ($\mu$) for the mean and the `std.error` field ($\sigma_e$) as the standard deviation. The details of this calculation can be found [...](). As a result of this step, each known observation has, in addition to its original value, 10 simulated values associated with it, resulting in 10 simulated datasets.
+Simulated data is drawn from a $\beta$ distribution using, for all known observations, the `value` field ($\mu$) for the mean and the `std.error` field ($\sigma_e$) as the standard deviation. The details of this calculation can be found in the [full paper](). As a result of this step, each known observation has, in addition to its original value, 10 simulated values associated with it, resulting in 10 simulated datasets.
 
 <!-- The standard deviation is a function of the number of observations and $\sigma_e$, but we do not know the number of observations. Trial and error of different choices to match $\sigma_e$ yielded problems as the upper bound value of the standard deviation, due to the bounded nature of the potential values, is a function of the mean value used in the $\beta$ distribution. This is described as follows: -->
 
@@ -298,7 +300,12 @@ $$E=\sum_j{\mu_j*F_j*I_j}$$
 expected.vals <- computeEVs(blended.model)
 ```
 
-This measure can be used in a correlation calculation across occupations (see \@ref(fig:...), below). Further, it can be used to assess job similarity between different occupations (see \@ref(standardized-ele) for more details). ELE can also be applied to improving survey design, but this is beyond the scope of this vignette (see [...]() for full details).
+This measure can be used in a correlation calculation across occupations, as in Fig. \@ref(fig:htmp), below. Further, it can be used to assess job similarity between different occupations (see \@ref(standardized-ele) for more details). ELE can also be applied to improving survey design, but this is beyond the scope of this vignette (see [full paper]() for further details).
+
+```{r htmp, echo=TRUE,fig.align='center',fig.cap="Heatmap of occupational correlation of ELE, organized by 2-digit SOC code. Intra-group correlation (major diagonal) is generally higher than inter-group correlation."}
+htmp <- correlationPlot(blended.model,plot.dim=3,print.plot=FALSE)
+htmp$plot.pub
+```
 
 ## Job Similarity
 
@@ -318,15 +325,15 @@ job.ovrlp2 <- computeOverlap(blended.model,"Accountants","Actuaries")
 job.ovrlp3 <- computeOverlap(blended.model,"Accountants","Chemists")
 ```
 
-```{r overlap-omega1, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Overlap of Accountants and Web Developers. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
+```{r overlap-omega1, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Overlap of Accountants and Web Developers. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
 include_graphics("overlap_Accountants-v-Web Developers.png")
 ```
 
-```{r overlap-omega2, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Overlap of Accountants and Actuaries. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
+```{r overlap-omega2, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Overlap of Accountants and Actuaries. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
 include_graphics("overlap_Accountants-v-Actuaries.png")
 ```
 
-```{r overlap-omega3, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Overlap of Accountants and Chemists. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
+```{r overlap-omega3, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Overlap of Accountants and Chemists. Mean +/- SD (dashed lines) assumes equal weighting of captured activity."}
 include_graphics("overlap_Accountants-v-Chemists.png")
 ```
 
@@ -345,14 +352,14 @@ stdEV.diff2 <- computeStdEVdiff(blended.model,"Accountants","Actuaries")
 stdEV.diff3 <- computeStdEVdiff(blended.model,"Accountants","Chemists")
 ```
 
-```{r overlap-ele1, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Difference in standardized ELEs between Accountants and Web Developers."}
+```{r overlap-ele1, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Difference in standardized ELEs between Accountants and Web Developers."}
 include_graphics("stdEVdiff_Accountants-v-Web Developers.png")
 ```
 
-```{r overlap-ele2, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Difference in standardized ELEs between Accountants and Actuaries."}
+```{r overlap-ele2, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Difference in standardized ELEs between Accountants and Actuaries."}
 include_graphics("stdEVdiff_Accountants-v-Actuaries.png")
 ```
 
-```{r overlap-ele3, echo=FALSE,fig.align='center',out.width="75%",fig.height=3.5,fig.cap="Difference in standardized ELEs between Accountants and Chemists."}
+```{r overlap-ele3, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Difference in standardized ELEs between Accountants and Chemists."}
 include_graphics("stdEVdiff_Accountants-v-Chemists.png")
 ```

@@ -7,7 +7,7 @@
 getTestSetData(model.results)
 }
 \arguments{
-\item{model.results}{Modeling results (output of iterateModelTT())}
+\item{model.results}{Modeling results (output of \code{\link[=iterateModelTT]{iterateModelTT()}})}
 }
 \value{
 Predictions from the test set, by iteration
@@ -18,4 +18,7 @@ The model is generated and iterated over the test set, producing predictions
 for about 10\% of the data. These predictions are extracted and organized by
 iteration. Recall that Iteration 0 is simply the naive guess (no modeling
 involved).
+}
+\seealso{
+\code{\link[=iterateModelTT]{iterateModelTT()}}
 }

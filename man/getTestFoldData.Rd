@@ -2,12 +2,12 @@
 % Please edit documentation in R/functions_kfolds.R
 \name{getTestFoldData}
 \alias{getTestFoldData}
-\title{Collate predictions for all 10 test folds, for each iteration}
+\title{Collate predictions for all 10 test folds from k-folds CV, for each iteration}
 \usage{
 getTestFoldData(model.results)
 }
 \arguments{
-\item{model.results}{Modeling results (output of iterateModelKFCVwSG())}
+\item{model.results}{Modeling results (output of \code{\link[=iterateModelKFCV]{iterateModelKFCV()}})}
 }
 \value{
 Collated predictions of each test fold, by iteration
@@ -17,7 +17,10 @@ Takes the results of a k-folds CV run and collates all the test fold data.
 In the KFCV analysis, each of 10 folds is treated as the test fold, and a
 model is generated and iterated over each of these test folds. The
 predictions resulting from each test fold are combined for each iteration,
-such that there is a complete predicted dataset (all records) obtained from
-each iteration. Recall that Iteration 0 is simply the output of smart
+such that there is a complete predicted dataset (all known records) obtained
+from each iteration. Recall that Iteration 0 is simply the output of smart
 guessing (no modeling involved).
+}
+\seealso{
+\code{\link[=iterateModelKFCV]{iterateModelKFCV()}}
 }

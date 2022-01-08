@@ -2,14 +2,14 @@
 % Please edit documentation in R/functions_analysis.R
 \name{computeCIs}
 \alias{computeCIs}
-\title{Calculate confidence intervals for predictions (missing values only)}
+\title{Calculate confidence intervals for final predictions (missing values only)}
 \usage{
 computeCIs(blended.results, confidence.level = 0.95)
 }
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
-computeBlendingRatio() (output of blendImputations())}
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}} (output of \code{\link[=blendImputations]{blendImputations()}})}
 
 \item{confidence.level}{Level at which to calculate confidence intervals;
 default is 0.95}
@@ -28,4 +28,9 @@ known data. Thus, for each observation we end up with a distribution of
 predictions, rather than a single point estimate. This allows us to calculate
 confidence intervals around each prediction. This CI calculation is done only
 for observations with missing values (i.e., those that were imputed).
+}
+\seealso{
+\code{\link[=blendImputations]{blendImputations()}}
+
+\code{\link[stats:t.test]{stats::t.test()}}
 }

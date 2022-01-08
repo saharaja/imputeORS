@@ -8,7 +8,7 @@ setDefaultModelingWeights(ors.data, unknown.weight = 0.5)
 }
 \arguments{
 \item{ors.data}{Data augmented with relevant predictors (output of
-getPredictors())}
+\code{\link[=getPredictors]{getPredictors()}})}
 
 \item{unknown.weight}{Modeling weight to assign to unknown estimates; default
 is 0.5}
@@ -19,5 +19,13 @@ Data augmented with relevant predictors and default modeling weights
 \description{
 In the modeling stage, data points can be weighted differently. This function
 assigns default weights to records based on the presence/absence of a mean
-estimate.
+estimate. Records with known estimates are assigned a weight of 1. Unknown
+estimates are assigned a variable weight (see below).
+}
+\seealso{
+\code{\link[=getPredictors]{getPredictors()}}
+
+\code{\link[xgboost:xgb.train]{xgboost::xgboost()}}
+
+\code{\link[xgboost:setinfo]{xgboost::setinfo()}}
 }

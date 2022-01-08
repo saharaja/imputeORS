@@ -7,16 +7,23 @@
 getPredictors(orsMnGCe)
 }
 \arguments{
-\item{orsMnGCe}{Data with errors and bounds (output of errorsAndBounding())}
+\item{orsMnGCe}{Data with errors and bounds (output of \code{\link[=errorsAndBounding]{errorsAndBounding()}})}
 }
 \value{
 Data augmented with relevant predictors
 }
 \description{
-(1) The data_element_text field was restructured into a new field,
-Requirement, and added to the data.
+This function assigns values to each observation for each of the predictors
+that will be used in the downstream analysis phase. This value assignment
+relies on an internal mapping, and results in the addition of a handful of
+columns to the data.
 }
 \details{
+The additions to the data are described below:
+
+(1) The data_element_text field is restructured into a new field,
+Requirement, and added to the data.
+
 (2) The data_element_text and data_type_text fields have somewhat overlapping
 roles in the original data.  Moreover their structure makes for a large
 increase in the dimensions of the data. We devised a way to map these
@@ -27,6 +34,11 @@ fields are added to the data.
 (3) Also added to the data are fields for SOC2, SOC3, and SOC4 codes, as well
 as a field for the relevant Requirement Category.
 
-(4) Generate an indicator column that differentiates between known estimates
-and missing estimates.
+(4) An indicator column that differentiates between known estimates missing
+estimates is added.
+}
+\seealso{
+\code{\link[=errorsAndBounding]{errorsAndBounding()}}
+
+\strong{predictors.data} for data mapping
 }

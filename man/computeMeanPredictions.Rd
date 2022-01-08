@@ -8,14 +8,14 @@ iteration}
 computeMeanPredictions(model.results, iteration, ors.data.sims)
 }
 \arguments{
-\item{model.results}{Results of iterative modeling (output of iterateModel())}
+\item{model.results}{Results of iterative modeling (output of \code{\link[=iterateModel]{iterateModel()}})}
 
 \item{iteration}{Iteration at which to compute mean estimates; usually, this
 will be the convergence iteration of model.results}
 
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, as well as simulated
-data (output of computeSimulations())}
+data (output of \code{\link[=computeSimulations]{computeSimulations()}})}
 }
 \value{
 Data frame containing all predictors for each observation, along with
@@ -29,4 +29,9 @@ observation is calculated by taking the average of the predictions for each
 simulation at a given iteration. Note that for known values, the mean
 estimate is simply the actual value associated with that observation (from
 which the simulated values are derived).
+}
+\seealso{
+\code{\link[=iterateModel]{iterateModel()}}
+
+\code{\link[=computeSimulations]{computeSimulations()}}
 }

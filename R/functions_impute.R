@@ -11,7 +11,8 @@
 #' given SOC group to produce an initial guess for a particular occupation, and 
 #' is briefly described below.
 #'
-#' The following procedure is followed within each SOC group. Each requirement 
+#' The following procedure is followed (in our analysis it was done for each SOC 
+#' group, which could be based on either SOC2 or SOC3 codes). Each requirement 
 #' is searched for an occupation with the "best" distribution, i.e. the job with
 #' the maximum number of known estimates. In cases where there are multiple such
 #' jobs, their requirement distributions are averaged to arrive at a single best
@@ -19,7 +20,9 @@
 #'  best distribution, and falls into one of three cases:
 #' 
 #' (1) Overlap between current job and the best distribution
+#' 
 #' (2) No overlap between current job and the best distribution
+#' 
 #' (3) Current job has no associated estimates (subset of case 2, above)
 #' 
 #' In the first case, missing estimates are populated as follows. A scaling 
@@ -27,12 +30,11 @@
 #' current job and the best distribution. This scaling factor is then multiplied
 #' by the sum total of the estimates associated with observations in the best 
 #' distribution that did not have counterparts in the current job, yielding some
-#'  value x. The value of x is then evenly distributed across all the 
-#' observations that were missing estimates in the current job, but had 
-#' estimates in the best distribution. Finally, the sum of all the values in the
-#' current job (both known, and guessed) is subtracted from 1, and this 
-#' remaining value is evenly distributed across any outstanding observations in
-#' the current job.
+#' value x. The value of x is then evenly distributed across all the estimates 
+#' that were missing in the current job, but had known values in the best 
+#' distribution. Finally, the sum of all the values in the current job (both 
+#' known, and guessed) is subtracted from 1, and this remaining value is evenly 
+#' distributed across any outstanding observations in the current job.
 #' 
 #' In the second case, the missing estimates are simply populated with the naive
 #' guess for their value. For example, if the known estimates in the current job
@@ -44,7 +46,7 @@
 #' counterpart's estimate. The remaining estimates are populated using the naive
 #' approach described in case 2.
 #' 
-#' The above procedure is completed per requirement, per SOC group. All guesses
+#' The above procedure is completed per requirement (per SOC group). All guesses
 #' are then adjusted to adhere to boundary conditions on the data (all estimates
 #' must be in the range \[0,1\], and the sum of all estimates within an 
 #' occupational group must be <=1). Note that the modeling weights associated 
@@ -55,7 +57,7 @@
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, possibly including
-#' simulated data (output of setDefaultModelingWeights(), or computeSimulations())
+#' simulated data (output of [setDefaultModelingWeights()], or [computeSimulations()])
 #' @param sim.no Assuming simulations are provided, specifies which simulation 
 #' to run smart guessing on; default is NULL (i.e., smart guess on original data)
 #' @param wt.low Model weight to assign to low-confidence smart guesses; default
@@ -65,7 +67,9 @@
 #' @param wt.high Model weight to assign to high-confidence smart guesses; 
 #' default is 0.5
 #' @param verbose Should messages be printed; default is FALSE (mute messages) 
-#' @return Input data frame, with missing values filled in by smart guesses
+#' @return Input data frame, with missing values filled in with smart guesses
+#' @seealso [setDefaultModelingWeights()]
+#' @seealso [computeSimulations()]
 #' @export
 smartGuess <- function(ors.data.sims,sim.no=NULL,
                        wt.low=0,wt.mid=0.5,wt.high=0.5,
@@ -182,7 +186,7 @@ smartGuess <- function(ors.data.sims,sim.no=NULL,
         current.known <- current.occ.group$to.sort[which(!is.na(current.occ.group$value))]
         common.known <- intersect(best.known,current.known)
         
-        # If there is overlap between best distribution and current OG..
+        # If there is overlap between best distribution and current OG...
         if (length(common.known) > 0) {  # make sure there is overlap
           if (verbose) {
             print(paste("Smart guessing for occupation: ",occ,sep=""))
@@ -289,10 +293,10 @@ smartGuess <- function(ors.data.sims,sim.no=NULL,
 #'
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, as well as simulated
-#' data (output of computeSimulations())
+#' data (output of [computeSimulations()])
 #' @param n.iter Number of times to iterate/adjust the model
-#' @param weight.step Increment by which to increase modeling weight of test 
-#' fold data with each iteration
+#' @param weight.step Increment by which to increase modeling weight of missing 
+#' data with each iteration
 #' @param mdl.d Tree model maximum depth; default is 14
 #' @param mdl.n Tree model rounds; default is 200
 #' @param mdl.e Tree model eta; default is 0.6
@@ -300,6 +304,11 @@ smartGuess <- function(ors.data.sims,sim.no=NULL,
 #' "upSOC3", or "upSOC4"
 #' @return A list containing the results of iterative modeling, for each 
 #' simulation
+#' @seealso [computeSimulations()]
+#' @seealso [smartGuess()]
+#' @seealso [xgboost::xgboost()]
+#' @seealso [doParallel::registerDoParallel()]
+#' @seealso [parallel::makeCluster()]
 #' @export
 iterateModel <- function(ors.data.sims,n.iter,weight.step,
                          mdl.d=14,mdl.n=200,mdl.e=0.6,
@@ -442,16 +451,18 @@ iterateModel <- function(ors.data.sims,n.iter,weight.step,
 #' estimate is simply the actual value associated with that observation (from 
 #' which the simulated values are derived).
 #'
-#' @param model.results Results of iterative modeling (output of iterateModel())
+#' @param model.results Results of iterative modeling (output of [iterateModel()])
 #' @param iteration Iteration at which to compute mean estimates; usually, this 
 #' will be the convergence iteration of model.results
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, as well as simulated
-#' data (output of computeSimulations())
+#' data (output of [computeSimulations()])
 #' @return Data frame containing all predictors for each observation, along with
 #' simulated values for known estimates, predicted values from each simulation 
 #' at the specified iteration for missing estimates, and a mean value calculated
 #' across all simulations (for known estimates, this is simply the actual value)
+#' @seealso [iterateModel()]
+#' @seealso [computeSimulations()]
 #' @export
 computeMeanPredictions <- function(model.results,iteration,ors.data.sims) {
   # Compute convergence iterations and get relevant predictions
@@ -493,20 +504,20 @@ computeMeanPredictions <- function(model.results,iteration,ors.data.sims) {
 #' blended results constitute the final imputations for the missing values.
 #'
 #' @param model.results.soc2 Results of iterative modeling, usually from SOC2 
-#' smart guessed data (output of iterateModel())
+#' smart guessed data (output of [iterateModel()])
 #' @param model.results.soc3 Results of iterative modeling, usually from SOC3 
-#' smart guessed data (output of iterateModel())
+#' smart guessed data (output of [iterateModel()])
 #' @param conv.iter.soc2 Convergence iteration of model.results.soc2 (calculated 
-#' by computeConvergence())
+#' by [computeConvergence()])
 #' @param conv.iter.soc3 Convergence iteration of model.results.soc3 (calculated 
-#' by computeConvergence())
+#' by [computeConvergence()])
 #' @param soc2.prop Contribution of model.results.soc2 to blending (calculated 
-#' by computeBlendingRatio())
+#' by [computeBlendingRatio()])
 #' @param soc3.prop Contribution of model.results.soc3 to blending (calculated 
-#' by computeBlendingRatio())
+#' by [computeBlendingRatio()])
 #' @param ors.data.sims Original data augmented with relevant predictors, i.e. 
 #' all records, including both known and missing estimates, as well as simulated
-#' data (output of computeSimulations())
+#' data (output of [computeSimulations()])
 #' @param write.files Should results be written to .csv and .Rdata files; 
 #' default is FALSE (do not write files)
 #' @return Data frame containing all predictors for each observation, along with
@@ -514,6 +525,10 @@ computeMeanPredictions <- function(model.results,iteration,ors.data.sims) {
 #' of predicted values from each simulation at the specified iterations for 
 #' missing estimates, and a mean value calculated across all simulations (for 
 #' known estimates, this is simply the actual value)
+#' @seealso [computeSimulations()]
+#' @seealso [iterateModel()]
+#' @seealso [computeConvergence()]
+#' @seealso [computeBlendingRatio()]
 #' @export
 blendImputations <- function(model.results.soc2,model.results.soc3,
                              conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop,
@@ -548,7 +563,7 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
 }
 
 
-#' Approximate uncertainty due to models
+#' Approximate uncertainty contributed by models (using the final imputation)
 #' 
 #' One of the major sources of uncertainty in this analysis is from the models 
 #' themselves. We attempt to quantify this using the predictions generated for 
@@ -569,20 +584,24 @@ blendImputations <- function(model.results.soc2,model.results.soc3,
 #' calculated in the k-folds cross validation portion of the analysis.
 #' 
 #' @param model.results.soc2 Results of iterative modeling, usually from SOC2 
-#' smart guessed data (output of iterateModel())
+#' smart guessed data (output of [iterateModel()])
 #' @param model.results.soc3 Results of iterative modeling, usually from SOC3 
-#' smart guessed data (output of iterateModel())
+#' smart guessed data (output of [iterateModel()])
 #' @param conv.iter.soc2 Convergence iteration of model.results.soc2 (calculated 
-#' by computeConvergence())
+#' by [computeConvergence()])
 #' @param conv.iter.soc3 Convergence iteration of model.results.soc3 (calculated 
-#' by computeConvergence())
+#' by [computeConvergence()])
 #' @param soc2.prop Contribution of model.results.soc2 to blending (calculated 
-#' by computeBlendingRatio())
+#' by [computeBlendingRatio()])
 #' @param soc3.prop Contribution of model.results.soc3 to blending (calculated 
-#' by computeBlendingRatio())
+#' by [computeBlendingRatio()])
 #' @return A list of length four, containing the MAE by simulation, the ME by 
 #' simulation, the average MAE across simulations, and the average ME across 
 #' simulations
+#' @seealso [iterateModel()]
+#' @seealso [computeConvergence()]
+#' @seealso [computeBlendingRatio()]
+#' @seealso [ModelMetrics::mae()]
 #' @export
 computeModelUncertainty <- function(model.results.soc2,model.results.soc3,
                                     conv.iter.soc2,conv.iter.soc3,soc2.prop,soc3.prop) {

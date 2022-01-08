@@ -9,10 +9,10 @@ computeEVs(blended.results)
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
-computeBlendingRatio() (output of blendImputations())}
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}} (output of \code{\link[=blendImputations]{blendImputations()}})}
 }
 \value{
-A data frame containing ELEs of each occupational groups, arranged
+A data frame containing ELEs of each occupational group, arranged
 with requirement (additive groups) as rows and occupation as columns
 }
 \description{
@@ -30,4 +30,7 @@ prediction across all the simulations for the \eqn{j}th observation, and
 observation, respectively:
 
 \deqn{E=\sum(\mu_j * F_j * I_j)}
+}
+\seealso{
+\code{\link[=blendImputations]{blendImputations()}}
 }

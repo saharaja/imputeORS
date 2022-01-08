@@ -2,31 +2,38 @@
 % Please edit documentation in R/functions_preprocessing.R
 \name{dataCorrections}
 \alias{dataCorrections}
-\title{Make corrections to data}
+\title{Make corrections to data during preprocessing}
 \usage{
 dataCorrections(orsC)
 }
 \arguments{
-\item{orsC}{Completed data (output of fillMissingObservations(), or
-otherMissingObservations())}
+\item{orsC}{Completed data (output of \code{\link[=fillMissingObservations]{fillMissingObservations()}}, or
+\code{\link[=otherMissingObservations]{otherMissingObservations()}})}
 }
 \value{
 Data, updated with corrections
 }
 \description{
-During our analysis process we noticed some corrections/adjustments that
-needed to be made:
+During the analysis process we noticed some corrections/adjustments that
+needed to be made at the preprocessing stage.
 }
 \details{
-(1) Requirement 'Hearing requirements: Pass a hearing test' was split between
-'Hearing requirements: Pass a hearing test' and
-'Hearing requirements: Pass a hearing Test'; these are standardized to the
+The following corrections are completed:
+
+(1) In the original data, the requirement 'Hearing requirements: Pass a
+hearing test' was split between 'Hearing requirements: Pass a hearing test'
+and 'Hearing requirements: Pass a hearing Test'; these are standardized to the
 former.
 
-(2) Remove observations with 'FULLY MITIGATED' in the data_type_text field.
+(2) Observations with 'FULLY MITIGATED' in the data_type_text field are removed.
 
 (3) Levels for the synthetic additive group (requirement) 78, ('Sitting or
 standing/walking') are set as 'SIT' and 'STAND' under data_type_text.
 
-(4) Ensure that data is formatted as a data frame.
+(4) Data is explicitly formatted as a data frame.
+}
+\seealso{
+\code{\link[=fillMissingObservations]{fillMissingObservations()}}
+
+\code{\link[=otherMissingObservations]{otherMissingObservations()}}
 }

@@ -9,7 +9,7 @@ standardizeEVs(blended.results, combine.adgs = TRUE, print.plot = TRUE)
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
-computeBlendingRatio() (output of blendImputations())}
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}} (output of \code{\link[=blendImputations]{blendImputations()}})}
 
 \item{combine.adgs}{Option to combine the four Lifting/carrying requirements
 and the two Reaching requirements into two aggregate requirements (LC and R,
@@ -24,7 +24,14 @@ matrix of standardized EVs, and a plot object of the standardized EVs;
 optionally produces a plot (.png file) of the standardized EVs
 }
 \description{
-The ELEs calculated by computeEVs() necessarily differ vastly in their
+The ELEs calculated by \code{\link[=computeEVs]{computeEVs()}} necessarily differ vastly in their
 range and distributions depending on the requirement. Standardizing them
 makes them more readily comparable.
+}
+\seealso{
+\code{\link[=blendImputations]{blendImputations()}}
+
+\code{\link[=computeEVs]{computeEVs()}}
+
+\code{\link[robustHD:standardize]{robustHD::standardize()}}
 }

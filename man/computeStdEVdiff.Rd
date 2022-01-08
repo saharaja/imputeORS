@@ -9,7 +9,7 @@ computeStdEVdiff(blended.results, jobA, jobB, print.plot = TRUE)
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
-computeBlendingRatio() (output of blendImputations())}
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}} (output of \code{\link[=blendImputations]{blendImputations()}})}
 
 \item{jobA}{First job to compare}
 
@@ -26,4 +26,9 @@ optionally produces a plot (.png file) of the differences in standardized EVs
 \description{
 Like the overlap metric, the standardized EVs can be used to compare two
 occupations, providing a measure of the similarity between jobs.
+}
+\seealso{
+\code{\link[=blendImputations]{blendImputations()}}
+
+\code{\link[=standardizeEVs]{standardizeEVs()}}
 }

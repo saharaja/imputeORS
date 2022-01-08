@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions_kfolds.R
 \name{plotTestFolds}
 \alias{plotTestFolds}
-\title{Plot predicted vs. actual values}
+\title{Plot predicted vs. actual values from k-folds CV results}
 \usage{
 plotTestFolds(
   test.fold.data,
@@ -15,7 +15,7 @@ plotTestFolds(
 )
 }
 \arguments{
-\item{test.fold.data}{Test fold predictions (output of getTestFoldData())}
+\item{test.fold.data}{Test fold predictions (output of \code{\link[=getTestFoldData]{getTestFoldData()}})}
 
 \item{plot.alpha}{Alpha (transparency) to use for points; default is 0.1}
 
@@ -44,4 +44,9 @@ For each iteration, plot the predicted values vs. actual values of
 observations in test folds. Recall that Iteration 0 is simply the output of
 smart guessing (no modeling involved). Note that n.iter=10 will plot
 Iterations 0-10, for a total of 11 iterations.
+}
+\seealso{
+\code{\link[=iterateModelKFCV]{iterateModelKFCV()}}
+
+\code{\link[=getTestFoldData]{getTestFoldData()}}
 }

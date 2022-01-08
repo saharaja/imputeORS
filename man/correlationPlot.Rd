@@ -9,7 +9,7 @@ correlationPlot(blended.results, plot.dim = 6.5, print.plot = TRUE)
 \arguments{
 \item{blended.results}{Blended predictions from imputation models, calculated
 at convergence iterations and blending proportions computed by
-computeBlendingRatio() (output of blendImputations())}
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}} (output of \code{\link[=blendImputations]{blendImputations()}})}
 
 \item{plot.dim}{Length of each side of the plot (in inches); default is 6.5}
 
@@ -23,7 +23,14 @@ occupations are labeled in addition to the SOC2 group labels, and one where
 they are not); optionally produces a PDF of the heatmap
 }
 \description{
-Produces a heatmap displaying correlation between expected values (ELEs) by
-occupation. The heatmap is arranged according to SOC2 code, so that similar
-occupations are grouped together.
+Produces a heatmap displaying Pearson correlation between expected values
+(ELEs) by occupation. The heatmap is arranged according to SOC2 code, so that
+similar occupations are grouped together.
+}
+\seealso{
+\code{\link[=blendImputations]{blendImputations()}}
+
+\code{\link[=computeEVs]{computeEVs()}}
+
+\code{\link[stats:cor]{stats::cor()}}
 }

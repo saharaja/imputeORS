@@ -20,12 +20,13 @@ estBetaParams <- function(mu,var) {
 #'
 #' This function generates a sample of n values derived from a beta distribution 
 #' specified by a mean and associated variance (error). The beta distribution is
-#' generated using estBetaParams(). The default sample size is 10.
+#' generated using [estBetaParams()]. The default sample size is 10.
 #'
 #' @param mu Mean of distribution
 #' @param stdev Variance (error) of distribution
 #' @param n Number of values to draw; default is 10
 #' @return A sample of size n
+#' @seealso [estBetaParams()]
 #' @export
 stdErrMC<- function(mu,stdev,n=10){
   betaCoefs=estBetaParams(mu,stdev*stdev)
@@ -54,8 +55,10 @@ stdErrMC<- function(mu,stdev,n=10){
 #' calculate a confidence level for each imputed value.
 #'
 #' @param df Data augmented with relevant predictors and default modeling 
-#' weights (output of setDefaultModelingWeights())
+#' weights (output of [setDefaultModelingWeights()])
 #' @return Original input, with simulated data appended
+#' @seealso [stdErrMC()]
+#' @seealso [setDefaultModelingWeights()]
 #' @export
 computeSimulations <-function(df){
   inCount=0

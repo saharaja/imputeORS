@@ -2,16 +2,16 @@
 % Please edit documentation in R/functions_kfolds.R
 \name{computeBlendingRatio}
 \alias{computeBlendingRatio}
-\title{Compute model blending ratio}
+\title{Compute model blending ratio from k-folds CV results}
 \usage{
 computeBlendingRatio(model.results.soc2, model.results.soc3, print.plot = TRUE)
 }
 \arguments{
 \item{model.results.soc2}{Modeling results of SOC2 smart guessed data (output
-of iterateModelKFCVwSG())}
+of \code{\link[=iterateModelKFCV]{iterateModelKFCV()}})}
 
 \item{model.results.soc3}{Modeling results of SOC3 smart guessed data (output
-of iterateModelKFCVwSG())}
+of \code{\link[=iterateModelKFCV]{iterateModelKFCV()}})}
 
 \item{print.plot}{Should plot file (.png) be generated; default is TRUE
 (create plot file)}
@@ -20,7 +20,7 @@ of iterateModelKFCVwSG())}
 A list of length six, containing the convergence iterations of
 model.results.soc2 and model.results.soc3, the contributions of
 model.results.soc2 and model.results.soc3 (as proportions), the blended
-predictions of each iteration (which can be fed to plotTestFolds()), and a
+predictions of each iteration (which can be fed to \code{\link[=plotTestFolds]{plotTestFolds()}}), and a
 plot object of the RMSE of blended predictions at convergence; optionally
 produces a plot (.png file) of RMSE of blended predictions at convergence
 }
@@ -30,15 +30,25 @@ initial smart guesses were computed based on separating the data based on
 their SOC2 codes. In the second run, the same was done using the SOC3 codes
 instead. This function computes a blending ratio, i.e. the contribution of
 each model to our final predictions. This is done by determining the
-convergence iteration of each model, then computing a weighted average of the
-relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The
-RMSE of these prediction weighted averages were then calculated. The weighted
-average that resulted in the lowest RMSE was selected to determine the
-blending ratio. For example, if the prediction weighted average of 0.45(run1) +
-0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
+convergence iteration of each model from the KFCV stage of analysis, then
+computing a weighted average of the relevant predictions in steps of 0.01,
+e.g. 0.01(run1) + 0.99*(run2). The RMSE of these prediction weighted averages
+were then calculated. The weighted average that resulted in the lowest RMSE
+was selected to determine the blending ratio. For example, if the prediction
+weighted average of 0.45(run1) + 0.55(run2) yielded the lowest RMSE, then the
+blending ratio would be 45:55.
 }
 \details{
 Note that we specify models based on SOC2 and SOC3 smart guesses to provide a
-concrete example. In reality, the two models are not limited to this specific
-combination.
+concrete example. In reality, the two models (run1 and run 2) are not limited
+to this specific combination.
+}
+\seealso{
+\code{\link[=iterateModelKFCV]{iterateModelKFCV()}}
+
+\code{\link[=getTestFoldData]{getTestFoldData()}}
+
+\code{\link[=computeConvergence]{computeConvergence()}}
+
+\code{\link[ModelMetrics:rmse]{ModelMetrics::rmse()}}
 }

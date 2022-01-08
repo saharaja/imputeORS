@@ -16,7 +16,7 @@ smartGuess(
 \arguments{
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, possibly including
-simulated data (output of setDefaultModelingWeights(), or computeSimulations())}
+simulated data (output of \code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}, or \code{\link[=computeSimulations]{computeSimulations()}})}
 
 \item{sim.no}{Assuming simulations are provided, specifies which simulation
 to run smart guessing on; default is NULL (i.e., smart guess on original data)}
@@ -33,7 +33,7 @@ default is 0.5}
 \item{verbose}{Should messages be printed; default is FALSE (mute messages)}
 }
 \value{
-Input data frame, with missing values filled in by smart guesses
+Input data frame, with missing values filled in with smart guesses
 }
 \description{
 Function to perform "smart guessing" procedure to generate initial guess for
@@ -46,7 +46,8 @@ given SOC group to produce an initial guess for a particular occupation, and
 is briefly described below.
 }
 \details{
-The following procedure is followed within each SOC group. Each requirement
+The following procedure is followed (in our analysis it was done for each SOC
+group, which could be based on either SOC2 or SOC3 codes). Each requirement
 is searched for an occupation with the "best" distribution, i.e. the job with
 the maximum number of known estimates. In cases where there are multiple such
 jobs, their requirement distributions are averaged to arrive at a single best
@@ -54,7 +55,9 @@ distribution. Then, each job (within a given requirement) is compared to this
 best distribution, and falls into one of three cases:
 
 (1) Overlap between current job and the best distribution
+
 (2) No overlap between current job and the best distribution
+
 (3) Current job has no associated estimates (subset of case 2, above)
 
 In the first case, missing estimates are populated as follows. A scaling
@@ -62,12 +65,11 @@ factor was first computed based on the overlapping observations in the
 current job and the best distribution. This scaling factor is then multiplied
 by the sum total of the estimates associated with observations in the best
 distribution that did not have counterparts in the current job, yielding some
-value x. The value of x is then evenly distributed across all the
-observations that were missing estimates in the current job, but had
-estimates in the best distribution. Finally, the sum of all the values in the
-current job (both known, and guessed) is subtracted from 1, and this
-remaining value is evenly distributed across any outstanding observations in
-the current job.
+value x. The value of x is then evenly distributed across all the estimates
+that were missing in the current job, but had known values in the best
+distribution. Finally, the sum of all the values in the current job (both
+known, and guessed) is subtracted from 1, and this remaining value is evenly
+distributed across any outstanding observations in the current job.
 
 In the second case, the missing estimates are simply populated with the naive
 guess for their value. For example, if the known estimates in the current job
@@ -79,7 +81,7 @@ have known estimates in the best distribution simply receive the value of the
 counterpart's estimate. The remaining estimates are populated using the naive
 approach described in case 2.
 
-The above procedure is completed per requirement, per SOC group. All guesses
+The above procedure is completed per requirement (per SOC group). All guesses
 are then adjusted to adhere to boundary conditions on the data (all estimates
 must be in the range [0,1], and the sum of all estimates within an
 occupational group must be <=1). Note that the modeling weights associated
@@ -87,4 +89,9 @@ with guessed values are altered based on which of the three cases they fall
 into, with those falling in cases 1 and 3 receiving higher weights, and those
 falling in case 2 receiving lower weights. These weights are used in the
 iterative modeling step.
+}
+\seealso{
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}
+
+\code{\link[=computeSimulations]{computeSimulations()}}
 }

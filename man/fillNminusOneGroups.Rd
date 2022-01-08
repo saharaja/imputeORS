@@ -7,7 +7,7 @@
 fillNminusOneGroups(orsMnC)
 }
 \arguments{
-\item{orsMnC}{Mean estimates (output of getMeanEstimates())}
+\item{orsMnC}{Mean estimates (output of \code{\link[=getMeanEstimates]{getMeanEstimates()}})}
 }
 \value{
 N-1 group completed data
@@ -19,4 +19,7 @@ have one estimate available can be filled in based on the known data.
 Similarly, if an occupational group has 5 levels, and 4 of them have known
 estimates, then the final one can be calculated. This is because the total
 value of any occupational group must be 100\%.
+}
+\seealso{
+\code{\link[=getMeanEstimates]{getMeanEstimates()}}
 }

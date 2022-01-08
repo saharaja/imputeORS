@@ -11,17 +11,19 @@
 #'
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
 #' records, including both known and missing estimates (output of 
-#' setDefaultModelingWeights(), or computeSimulations())
+#' [setDefaultModelingWeights()], or [computeSimulations()])
 #' @param n.iter Number of times to iterate/adjust the model
 #' @param weight.step Increment by which to increase modeling weight of test 
-#' fold data with each iteration
+#' set data with each iteration
 #' @param mdl.d Tree model maximum depth; default is 14
 #' @param mdl.n Tree model rounds; default is 200
 #' @param mdl.e Tree model eta; default is 0.6
 #' @param fold.list A list of preset folds, if these have to be fixed across 
 #' runs; default is to generate a new set of folds
-#' @return A list of length two, containing a list of hold out indices for each
-#' test fold, and the results of iterative modeling
+#' @return A list of length two, containing a list of hold out indices for the
+#' test set, and the results of iterative modeling
+#' @seealso [setDefaultModelingWeights()]
+#' @seealso [computeSimulations()]
 #' @export
 iterateModelTT <- function(ors.data,n.iter,weight.step,
                            mdl.d=14,mdl.n=200,mdl.e=0.6,
@@ -175,8 +177,9 @@ iterateModelTT <- function(ors.data,n.iter,weight.step,
 #' iteration. Recall that Iteration 0 is simply the naive guess (no modeling 
 #' involved).
 #'
-#' @param model.results Modeling results (output of iterateModelTT())
+#' @param model.results Modeling results (output of [iterateModelTT()])
 #' @return Predictions from the test set, by iteration
+#' @seealso [iterateModelTT()]
 #' @export
 getTestSetData <- function(model.results) {
   model.iterations <- model.results$model.iterations

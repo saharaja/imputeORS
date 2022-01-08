@@ -16,9 +16,12 @@ records (mean and standard error estimates) and columns
 \description{
 Five synthetic additive groups were manually constructed based on the advice
 of SSA analysts, using reference_group numbers:
-11) Literacy required
-89) Pre-employment training: Certification
-90) Pre-employment training: License
-91) Pre-employment training: Educational Certificate
-78) Sitting or standing/walking
+(11) Literacy required,
+(89) Pre-employment training: Certification,
+(90) Pre-employment training: License,
+(91) Pre-employment training: Educational Certificate, and
+(78) Sitting or standing/walking.
+}
+\seealso{
+\strong{ors.from.csv} for original data used in our analysis
 }

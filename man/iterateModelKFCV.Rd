@@ -18,12 +18,12 @@ iterateModelKFCV(
 \arguments{
 \item{ors.data}{Original data augmented with relevant predictors, i.e. all
 records, including both known and missing estimates (output of
-setDefaultModelingWeights(), or computeSimulations())}
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}, or \code{\link[=computeSimulations]{computeSimulations()}})}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 
 \item{weight.step}{Increment by which to increase modeling weight of test
-fold data with each iteration}
+fold and missing data with each iteration}
 
 \item{mdl.d}{Tree model maximum depth; default is 14}
 
@@ -42,10 +42,25 @@ A list of length two, containing a list of hold out indices for each
 test fold, and the results of iterative modeling
 }
 \description{
-Function to do k-folds cross validation in an iterative fashion. The first
-prediction (Iteration 0) is the result of the smart guessing procedure. All
-subsequent iterations rely on XGBoost to produce preliminary predictions.
-These predictions are then adjusted to adhere to boundary conditions on the
-data (all estimates must be in the range [0,1], and the sum of all estimates
-within an occupational group must be <=1).
+Function to do k-folds cross validation in an iterative fashion, for the
+purposes of model tuning. The first prediction (Iteration 0) is the result of
+the smart guessing procedure. All subsequent iterations rely on XGBoost to
+produce preliminary predictions. These predictions are then adjusted to
+adhere to boundary conditions on the data (all estimates must be in the range
+[0,1], and the sum of all estimates within an occupational group must be <=1).
+}
+\seealso{
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}
+
+\code{\link[=computeSimulations]{computeSimulations()}}
+
+\code{\link[=smartGuess]{smartGuess()}}
+
+\code{\link[xgboost:xgb.train]{xgboost::xgboost()}}
+
+\code{\link[caret:createDataPartition]{caret::createFolds()}}
+
+\code{\link[doParallel:registerDoParallel]{doParallel::registerDoParallel()}}
+
+\code{\link[parallel:makeCluster]{parallel::makeCluster()}}
 }

@@ -7,11 +7,16 @@
 getErrors(orsC)
 }
 \arguments{
-\item{orsC}{Completed, corrected data (output of dataCorrections())}
+\item{orsC}{Completed, corrected data (output of \code{\link[=dataCorrections]{dataCorrections()}})}
 }
 \value{
 Standard error estimates only
 }
 \description{
 Select only the standard error estimates from the data.
+}
+\seealso{
+\code{\link[=dataCorrections]{dataCorrections()}}
+
+\code{\link[=getMeanEstimates]{getMeanEstimates()}}
 }

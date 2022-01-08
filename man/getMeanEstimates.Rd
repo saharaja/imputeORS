@@ -7,11 +7,16 @@
 getMeanEstimates(orsC)
 }
 \arguments{
-\item{orsC}{Completed, corrected data (output of dataCorrections())}
+\item{orsC}{Completed, corrected data (output of \code{\link[=dataCorrections]{dataCorrections()}})}
 }
 \value{
 Mean estimates only
 }
 \description{
 Select only the mean estimates from the data.
+}
+\seealso{
+\code{\link[=dataCorrections]{dataCorrections()}}
+
+\code{\link[=getErrors]{getErrors()}}
 }

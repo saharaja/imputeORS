@@ -19,5 +19,8 @@ A sample of size n
 \description{
 This function generates a sample of n values derived from a beta distribution
 specified by a mean and associated variance (error). The beta distribution is
-generated using estBetaParams(). The default sample size is 10.
+generated using \code{\link[=estBetaParams]{estBetaParams()}}. The default sample size is 10.
+}
+\seealso{
+\code{\link[=estBetaParams]{estBetaParams()}}
 }

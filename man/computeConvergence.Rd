@@ -2,12 +2,12 @@
 % Please edit documentation in R/functions_kfolds.R
 \name{computeConvergence}
 \alias{computeConvergence}
-\title{Compute convergence iteration}
+\title{Compute convergence iteration of k-folds CV models}
 \usage{
 computeConvergence(test.fold.data, verbose = TRUE, show.plot = TRUE)
 }
 \arguments{
-\item{test.fold.data}{Test fold predictions (output of getTestFoldData())}
+\item{test.fold.data}{Test fold predictions (output of \code{\link[=getTestFoldData]{getTestFoldData()}})}
 
 \item{verbose}{Should messages be printed; default is TRUE (print messages)}
 
@@ -21,8 +21,8 @@ Convergence iteration of k-folds cross validation modeling
 For a set of iterative k-folds modeling results, it is necessary to determine
 the convergence point of the model. This function computes this using the
 RMSE of iterated predictions vs. the actual known values (this can be
-accomplished because the k-folds procedure relies on known estimates only,
-and simulates missing estimates from the known set).
+accomplished because the k-folds procedure creates mock missing data from the
+set of known estimates, so their true values are known quantities).
 }
 \details{
 We defined convergence as when the difference between the RMSE of consecutive
@@ -30,4 +30,11 @@ iterations was < 0.001. If this convergence criteria is not met, the function
 simply returns the final iteration (and a message stating that convergence
 was not reached). Recall that Iteration 0 is simply the output of smart
 guessing (no modeling involved).
+}
+\seealso{
+\code{\link[=iterateModelKFCV]{iterateModelKFCV()}}
+
+\code{\link[=getTestFoldData]{getTestFoldData()}}
+
+\code{\link[ModelMetrics:rmse]{ModelMetrics::rmse()}}
 }

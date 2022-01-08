@@ -17,12 +17,12 @@ iterateModelTT(
 \arguments{
 \item{ors.data}{Original data augmented with relevant predictors, i.e. all
 records, including both known and missing estimates (output of
-setDefaultModelingWeights(), or computeSimulations())}
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}, or \code{\link[=computeSimulations]{computeSimulations()}})}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 
 \item{weight.step}{Increment by which to increase modeling weight of test
-fold data with each iteration}
+set data with each iteration}
 
 \item{mdl.d}{Tree model maximum depth; default is 14}
 
@@ -34,8 +34,8 @@ fold data with each iteration}
 runs; default is to generate a new set of folds}
 }
 \value{
-A list of length two, containing a list of hold out indices for each
-test fold, and the results of iterative modeling
+A list of length two, containing a list of hold out indices for the
+test set, and the results of iterative modeling
 }
 \description{
 Function to do train-test modeling in an iterative fashion, for the purposes
@@ -44,4 +44,9 @@ All subsequent iterations rely on XGBoost to produce preliminary predictions.
 These predictions are then adjusted to adhere to boundary conditions on the
 data (all estimates must be in the range [0,1], and the sum of all estimates
 within an occupational group must be <=1).
+}
+\seealso{
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}
+
+\code{\link[=computeSimulations]{computeSimulations()}}
 }

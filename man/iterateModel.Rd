@@ -17,12 +17,12 @@ iterateModel(
 \arguments{
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, as well as simulated
-data (output of computeSimulations())}
+data (output of \code{\link[=computeSimulations]{computeSimulations()}})}
 
 \item{n.iter}{Number of times to iterate/adjust the model}
 
-\item{weight.step}{Increment by which to increase modeling weight of test
-fold data with each iteration}
+\item{weight.step}{Increment by which to increase modeling weight of missing
+data with each iteration}
 
 \item{mdl.d}{Tree model maximum depth; default is 14}
 
@@ -44,4 +44,15 @@ subsequent iterations rely on XGBoost to produce preliminary predictions.
 These predictions are then adjusted to adhere to boundary conditions on the
 data (all estimates must be in the range [0,1], and the sum of all estimates
 within an occupational group must be <=1).
+}
+\seealso{
+\code{\link[=computeSimulations]{computeSimulations()}}
+
+\code{\link[=smartGuess]{smartGuess()}}
+
+\code{\link[xgboost:xgb.train]{xgboost::xgboost()}}
+
+\code{\link[doParallel:registerDoParallel]{doParallel::registerDoParallel()}}
+
+\code{\link[parallel:makeCluster]{parallel::makeCluster()}}
 }

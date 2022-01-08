@@ -35,7 +35,7 @@ checkSums <- function(ors.data,column.name="prediction") {
 }
 
 
-#' Calculate confidence intervals for predictions (missing values only)
+#' Calculate confidence intervals for final predictions (missing values only)
 #' 
 #' Our procedure involves creating a set of simulated data based on the original 
 #' known data. Thus, for each observation we end up with a distribution of 
@@ -45,7 +45,7 @@ checkSums <- function(ors.data,column.name="prediction") {
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
+#' [computeBlendingRatio()] (output of [blendImputations()])
 #' @param confidence.level Level at which to calculate confidence intervals; 
 #' default is 0.95
 #' @return A list of length two, containing a data frame describing distribution
@@ -54,6 +54,8 @@ checkSums <- function(ors.data,column.name="prediction") {
 #' for each of these observations; note that the latter includes a column called 
 #' "error.flag" that indicates whether there was an error in computing the CI 
 #' (the detailed errors are printed during execution)
+#' @seealso [blendImputations()]
+#' @seealso [stats::t.test()]
 #' @export
 computeCIs <- function(blended.results,confidence.level=0.95) {
   # Get predictions from relevant iteration of each simulation to create distributions
@@ -101,9 +103,10 @@ computeCIs <- function(blended.results,confidence.level=0.95) {
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
-#' @return A data frame containing ELEs of each occupational groups, arranged 
+#' [computeBlendingRatio()] (output of [blendImputations()])
+#' @return A data frame containing ELEs of each occupational group, arranged 
 #' with requirement (additive groups) as rows and occupation as columns
+#' @seealso [blendImputations()]
 #' @export
 computeEVs <- function(blended.results) {
   
@@ -122,13 +125,13 @@ computeEVs <- function(blended.results) {
 
 #' Compute correlation of ELEs, and plot relevant heatmap (grouped by SOC2 code)
 #' 
-#' Produces a heatmap displaying correlation between expected values (ELEs) by 
-#' occupation. The heatmap is arranged according to SOC2 code, so that similar 
-#' occupations are grouped together.
+#' Produces a heatmap displaying Pearson correlation between expected values 
+#' (ELEs) by occupation. The heatmap is arranged according to SOC2 code, so that 
+#' similar occupations are grouped together.
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
+#' [computeBlendingRatio()] (output of [blendImputations()])
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
 #' (create plot file)
 #' @param plot.dim Length of each side of the plot (in inches); default is 6.5
@@ -136,6 +139,9 @@ computeEVs <- function(blended.results) {
 #' correlation matrix, and two plot objects (one where the individual 
 #' occupations are labeled in addition to the SOC2 group labels, and one where 
 #' they are not); optionally produces a PDF of the heatmap
+#' @seealso [blendImputations()]
+#' @seealso [computeEVs()]
+#' @seealso [stats::cor()]
 #' @export
 correlationPlot <- function(blended.results,plot.dim=6.5,print.plot=TRUE) {
   # Compute expected values
@@ -192,25 +198,26 @@ correlationPlot <- function(blended.results,plot.dim=6.5,print.plot=TRUE) {
 #' interval \[0,1\]. This produces a way to measure similarity between different
 #' occupations.
 #' 
-#' If \eqn{\omega_{1ir}} is the population mean of the \eqn{i}th level of the 
+#' If \eqn{\omega_1ir} is the population mean of the \eqn{i}th level of the 
 #' \eqn{r}th requirement for Job 1 (average of simulation predictions for 
-#' missing values, and actual value for known estimates), and \eqn{\omega_{2ir}} 
+#' missing values, and actual value for known estimates), and \eqn{\omega_2ir} 
 #' is the same for Job 2, then we say that the overlap of \eqn{r}th requirement 
 #' (\eqn{O_r}) for these two jobs is:
 #' 
-#' \deqn{O_r = \sum(\omega_{1ir}*\omega_{2ir})}
+#' \deqn{O_r = \sum(\omega_1ir * \omega_2ir)}
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
+#' [computeBlendingRatio()] (output of [blendImputations()])
 #' @param jobA First job to compare
 #' @param jobB Second job to compare
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
 #' (create plot file)
 #' @return A list of length three, containing a data frame with all the data 
 #' pertaining to the specified occupations, a data frame of the overlap values
-#' for these occupations by requirement, and a plot object displaying this 
+#' for these occupations by requirement, and a plot object displaying these 
 #' overlap values; optionally produces a plot (.png file) of the overlap
+#' @seealso [blendImputations()]
 #' @export
 computeOverlap <- function(blended.results,jobA,jobB,print.plot=TRUE) {
   # Filter data by specified jobs
@@ -259,13 +266,13 @@ computeOverlap <- function(blended.results,jobA,jobB,print.plot=TRUE) {
 
 #' Standardize expected values, and generate plot
 #' 
-#' The ELEs calculated by computeEVs() necessarily differ vastly in their 
+#' The ELEs calculated by [computeEVs()] necessarily differ vastly in their 
 #' range and distributions depending on the requirement. Standardizing them 
 #' makes them more readily comparable.
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
+#' [computeBlendingRatio()] (output of [blendImputations()])
 #' @param combine.adgs Option to combine the four Lifting/carrying requirements
 #' and the two Reaching requirements into two aggregate requirements (LC and R, 
 #' respectively); default is TRUE
@@ -274,6 +281,9 @@ computeOverlap <- function(blended.results,jobA,jobB,print.plot=TRUE) {
 #' @return A list of length three, containing a data frame of expected values, a
 #' matrix of standardized EVs, and a plot object of the standardized EVs; 
 #' optionally produces a plot (.png file) of the standardized EVs
+#' @seealso [blendImputations()]
+#' @seealso [computeEVs()]
+#' @seealso [robustHD::standardize()]
 #' @export
 standardizeEVs <- function(blended.results,combine.adgs=TRUE,print.plot=TRUE) {
   # Create combined Lifting/carrying and Reaching additive groups (for plotting)
@@ -316,7 +326,7 @@ standardizeEVs <- function(blended.results,combine.adgs=TRUE,print.plot=TRUE) {
 #'
 #' @param blended.results Blended predictions from imputation models, calculated
 #' at convergence iterations and blending proportions computed by 
-#' computeBlendingRatio() (output of blendImputations())
+#' [computeBlendingRatio()] (output of [blendImputations()])
 #' @param jobA First job to compare
 #' @param jobB Second job to compare
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
@@ -324,6 +334,8 @@ standardizeEVs <- function(blended.results,combine.adgs=TRUE,print.plot=TRUE) {
 #' @return A list of two objects, containing a data frame of the differences in 
 #' standardized EV by requirement, and a plot object of these differences; 
 #' optionally produces a plot (.png file) of the differences in standardized EVs
+#' @seealso [blendImputations()]
+#' @seealso [standardizeEVs()]
 #' @export
 computeStdEVdiff <- function(blended.results,jobA,jobB,print.plot=TRUE) {
   # Get standardized EVs

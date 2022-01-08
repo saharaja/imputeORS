@@ -22,15 +22,16 @@ getORS <- function(orsLink="https://www.bls.gov/ors/xlsx/2018_excel_output.xlsx"
 #'
 #' Five synthetic additive groups were manually constructed based on the advice
 #' of SSA analysts, using reference_group numbers:
-#' 11) Literacy required
-#' 89) Pre-employment training: Certification
-#' 90) Pre-employment training: License
-#' 91) Pre-employment training: Educational Certificate
-#' 78) Sitting or standing/walking
+#' (11) Literacy required,
+#' (89) Pre-employment training: Certification,
+#' (90) Pre-employment training: License,
+#' (91) Pre-employment training: Educational Certificate, and
+#' (78) Sitting or standing/walking.
 #'
 #' @param orsRaw Original data (read in from CSV file)
 #' @return Data edited for new additive groups, and containing only relevant
 #' records (mean and standard error estimates) and columns
+#' @seealso **ors.from.csv** for original data used in our analysis
 #' @export
 syntheticAddGroups <- function(orsRaw) {
   
@@ -67,8 +68,10 @@ syntheticAddGroups <- function(orsRaw) {
 #' estimate) are generated here.
 #' This is done by "completing" the data using tidyr::complete.
 #'
-#' @param ors Data frame of relevant observations (output of syntheticAddGroups())
+#' @param ors Data frame of relevant observations (output of [syntheticAddGroups()])
 #' @return Data with newly generated observations added (completed data)
+#' @seealso [syntheticAddGroups()]
+#' @seealso [tidyr::complete()]
 #' @export
 fillMissingObservations <- function(ors) {
   orsC = ors%>% tidyr::complete(occupation_text,nesting(data_type_text,additive_group,
@@ -88,19 +91,30 @@ fillMissingObservations <- function(ors) {
 #' Generate additional (optional) missing observations
 #'
 #' SSA analysts requested the addition of a few other missing observations,
-#' based on requirement/level, listed below:
+#' based on requirement/level. These observations are appended to the data here.
+#' 
+#' The requested observations were as follows, listed by requirement and 
+#' constituent levels. Note that these were added to each occupation.
 #' 
 #' Humidity: CONSTANTLY
+#' 
 #' Heavy vibrations: CONSTANTLY, FREQUENTLY, SELDOM
+#' 
 #' Extreme cold: CONSTANTLY, FREQUENTLY
+#' 
 #' Climbing ladders, ropes, or scaffolds: CONSTANTLY, FREQUENTLY
+#' 
 #' Climbing ramps or stairs (work-related): CONSTANTLY, FREQUENTLY
-#' Stooping is missing: CONSTANTLY
-#' Kneeling is missing: CONSTANTLY, FREQUENTLY
-#' Crawling is missing: CONSTANTLY, FREQUENTLY
+#' 
+#' Stooping: CONSTANTLY
+#' 
+#' Kneeling: CONSTANTLY, FREQUENTLY
+#' 
+#' Crawling: CONSTANTLY, FREQUENTLY
 #'
-#' @param orsC Completed data (output of fillMissingObservations())
+#' @param orsC Completed data (output of [fillMissingObservations()])
 #' @return Completed data, with requested requirement/levels added
+#' @seealso [fillMissingObservations()]
 #' @export
 otherMissingObservations <- function(orsC) {
   # Humidity
@@ -197,26 +211,30 @@ otherMissingObservations <- function(orsC) {
 }
 
 
-#' Make corrections to data
+#' Make corrections to data during preprocessing
 #'
-#' During our analysis process we noticed some corrections/adjustments that 
-#' needed to be made:
+#' During the analysis process we noticed some corrections/adjustments that 
+#' needed to be made at the preprocessing stage.
 #' 
-#' (1) Requirement 'Hearing requirements: Pass a hearing test' was split between
-#' 'Hearing requirements: Pass a hearing test' and
-#' 'Hearing requirements: Pass a hearing Test'; these are standardized to the 
+#' The following corrections are completed:
+#' 
+#' (1) In the original data, the requirement 'Hearing requirements: Pass a 
+#' hearing test' was split between 'Hearing requirements: Pass a hearing test' 
+#' and 'Hearing requirements: Pass a hearing Test'; these are standardized to the 
 #' former.
 #' 
-#' (2) Remove observations with 'FULLY MITIGATED' in the data_type_text field.
+#' (2) Observations with 'FULLY MITIGATED' in the data_type_text field are removed.
 #' 
 #' (3) Levels for the synthetic additive group (requirement) 78, ('Sitting or 
 #' standing/walking') are set as 'SIT' and 'STAND' under data_type_text.
 #' 
-#' (4) Ensure that data is formatted as a data frame.
+#' (4) Data is explicitly formatted as a data frame.
 #'
-#' @param orsC Completed data (output of fillMissingObservations(), or
-#' otherMissingObservations())
+#' @param orsC Completed data (output of [fillMissingObservations()], or
+#' [otherMissingObservations()])
 #' @return Data, updated with corrections
+#' @seealso [fillMissingObservations()]
+#' @seealso [otherMissingObservations()]
 #' @export
 dataCorrections <- function(orsC) {
   # Data corrections
@@ -234,8 +252,10 @@ dataCorrections <- function(orsC) {
 #'
 #' Select only the mean estimates from the data.
 #'
-#' @param orsC Completed, corrected data (output of dataCorrections())
+#' @param orsC Completed, corrected data (output of [dataCorrections()])
 #' @return Mean estimates only
+#' @seealso [dataCorrections()]
+#' @seealso [getErrors()]
 #' @export
 getMeanEstimates <- function(orsC) {
   orsMnC <- orsC[orsC$estimate_type_text=="Estimate",c("occupation_text","upper_soc_code","data_element_text",
@@ -250,8 +270,10 @@ getMeanEstimates <- function(orsC) {
 #'
 #' Select only the standard error estimates from the data.
 #'
-#' @param orsC Completed, corrected data (output of dataCorrections())
+#' @param orsC Completed, corrected data (output of [dataCorrections()])
 #' @return Standard error estimates only
+#' @seealso [dataCorrections()]
+#' @seealso [getMeanEstimates()]
 #' @export
 getErrors <- function(orsC) {
   orsE <- orsC[orsC$estimate_type_text=="Standard error",c("occupation_text","upper_soc_code",
@@ -272,8 +294,9 @@ getErrors <- function(orsC) {
 #' estimates, then the final one can be calculated. This is because the total
 #' value of any occupational group must be 100%.
 #'
-#' @param orsMnC Mean estimates (output of getMeanEstimates())
+#' @param orsMnC Mean estimates (output of [getMeanEstimates()])
 #' @return N-1 group completed data
+#' @seealso [getMeanEstimates()]
 #' @export
 fillNminusOneGroups <- function(orsMnC) {
   yes.no <- droplevels(orsMnC[orsMnC$data_type_text=="YES" | orsMnC$data_type_text=="NO",])
@@ -361,16 +384,18 @@ fillNminusOneGroups <- function(orsMnC) {
 #' Assign errors to known mean estimates, and bounds for all estimates (known
 #' and unknown)
 #'
-#' The errors are collected alongside the mean estimates, and can allow for
+#' In the ORS, errors are collected alongside the mean estimates, which allows 
 #' empirical bounding of the data during modeling. For records lacking a mean
 #' estimate/error, we can still bound the missing estimate using the remaining
 #' value in an occupational group. For example, if there are three records in an
 #' occupational group, of which two estimates are known and sum to X%, the upper
 #' bound of the missing estimate is 100%-X%, and the lower bound is 0%.
 #'
-#' @param orsE Errors associated with mean estimates (output of getErrors())
-#' @param orsMnGC N-1 group completed data (output of fillNminusOneGroups())
+#' @param orsE Errors associated with mean estimates (output of [getErrors()])
+#' @param orsMnGC N-1 group completed data (output of [fillNminusOneGroups()])
 #' @return Data with relevant errors and bounds assigned to each record
+#' @seealso [getErrors()]
+#' @seealso [fillNminusOneGroups()]
 #' @export
 errorsAndBounding <- function(orsE,orsMnGC) {
   # Recall from the footnotes that:
@@ -429,7 +454,14 @@ errorsAndBounding <- function(orsE,orsMnGC) {
 
 #' Populate predictors based on data mapping
 #'
-#' (1) The data_element_text field was restructured into a new field, 
+#' This function assigns values to each observation for each of the predictors 
+#' that will be used in the downstream analysis phase. This value assignment 
+#' relies on an internal mapping, and results in the addition of a handful of 
+#' columns to the data. 
+#' 
+#' The additions to the data are described below:
+#'
+#' (1) The data_element_text field is restructured into a new field, 
 #' Requirement, and added to the data.
 #' 
 #' (2) The data_element_text and data_type_text fields have somewhat overlapping
@@ -442,11 +474,13 @@ errorsAndBounding <- function(orsE,orsMnGC) {
 #' (3) Also added to the data are fields for SOC2, SOC3, and SOC4 codes, as well
 #' as a field for the relevant Requirement Category.
 #' 
-#' (4) Generate an indicator column that differentiates between known estimates
-#' and missing estimates.
+#' (4) An indicator column that differentiates between known estimates missing 
+#' estimates is added.
 #'
-#' @param orsMnGCe Data with errors and bounds (output of errorsAndBounding())
+#' @param orsMnGCe Data with errors and bounds (output of [errorsAndBounding()])
 #' @return Data augmented with relevant predictors
+#' @seealso [errorsAndBounding()]
+#' @seealso **predictors.data** for data mapping
 #' @export
 getPredictors <- function(orsMnGCe) {
   # Get mapping for data/predictors
@@ -521,13 +555,17 @@ getPredictors <- function(orsMnGCe) {
 #' 
 #' In the modeling stage, data points can be weighted differently. This function
 #' assigns default weights to records based on the presence/absence of a mean
-#' estimate.
+#' estimate. Records with known estimates are assigned a weight of 1. Unknown 
+#' estimates are assigned a variable weight (see below).
 #'
 #' @param ors.data Data augmented with relevant predictors (output of 
-#' getPredictors())
+#' [getPredictors()])
 #' @param unknown.weight Modeling weight to assign to unknown estimates; default
 #' is 0.5
 #' @return Data augmented with relevant predictors and default modeling weights
+#' @seealso [getPredictors()]
+#' @seealso [xgboost::xgboost()]
+#' @seealso [xgboost::setinfo()]
 #' @export
 setDefaultModelingWeights <- function(ors.data,unknown.weight=0.5) {
   # Assign default modeling weights based on indicator column

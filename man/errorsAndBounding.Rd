@@ -8,18 +8,23 @@ and unknown)}
 errorsAndBounding(orsE, orsMnGC)
 }
 \arguments{
-\item{orsE}{Errors associated with mean estimates (output of getErrors())}
+\item{orsE}{Errors associated with mean estimates (output of \code{\link[=getErrors]{getErrors()}})}
 
-\item{orsMnGC}{N-1 group completed data (output of fillNminusOneGroups())}
+\item{orsMnGC}{N-1 group completed data (output of \code{\link[=fillNminusOneGroups]{fillNminusOneGroups()}})}
 }
 \value{
 Data with relevant errors and bounds assigned to each record
 }
 \description{
-The errors are collected alongside the mean estimates, and can allow for
+In the ORS, errors are collected alongside the mean estimates, which allows
 empirical bounding of the data during modeling. For records lacking a mean
 estimate/error, we can still bound the missing estimate using the remaining
 value in an occupational group. For example, if there are three records in an
 occupational group, of which two estimates are known and sum to X\%, the upper
 bound of the missing estimate is 100\%-X\%, and the lower bound is 0\%.
+}
+\seealso{
+\code{\link[=getErrors]{getErrors()}}
+
+\code{\link[=fillNminusOneGroups]{fillNminusOneGroups()}}
 }

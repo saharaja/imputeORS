@@ -17,26 +17,26 @@ blendImputations(
 }
 \arguments{
 \item{model.results.soc2}{Results of iterative modeling, usually from SOC2
-smart guessed data (output of iterateModel())}
+smart guessed data (output of \code{\link[=iterateModel]{iterateModel()}})}
 
 \item{model.results.soc3}{Results of iterative modeling, usually from SOC3
-smart guessed data (output of iterateModel())}
+smart guessed data (output of \code{\link[=iterateModel]{iterateModel()}})}
 
 \item{conv.iter.soc2}{Convergence iteration of model.results.soc2 (calculated
-by computeConvergence())}
+by \code{\link[=computeConvergence]{computeConvergence()}})}
 
 \item{conv.iter.soc3}{Convergence iteration of model.results.soc3 (calculated
-by computeConvergence())}
+by \code{\link[=computeConvergence]{computeConvergence()}})}
 
 \item{soc2.prop}{Contribution of model.results.soc2 to blending (calculated
-by computeBlendingRatio())}
+by \code{\link[=computeBlendingRatio]{computeBlendingRatio()}})}
 
 \item{soc3.prop}{Contribution of model.results.soc3 to blending (calculated
-by computeBlendingRatio())}
+by \code{\link[=computeBlendingRatio]{computeBlendingRatio()}})}
 
 \item{ors.data.sims}{Original data augmented with relevant predictors, i.e.
 all records, including both known and missing estimates, as well as simulated
-data (output of computeSimulations())}
+data (output of \code{\link[=computeSimulations]{computeSimulations()}})}
 
 \item{write.files}{Should results be written to .csv and .Rdata files;
 default is FALSE (do not write files)}
@@ -54,4 +54,13 @@ guessed data as the initial prediction (Iteration 0). These two models'
 results are then blended using the convergence and blending information
 calculated from the k-folds cross validation stage of the analysis. These
 blended results constitute the final imputations for the missing values.
+}
+\seealso{
+\code{\link[=computeSimulations]{computeSimulations()}}
+
+\code{\link[=iterateModel]{iterateModel()}}
+
+\code{\link[=computeConvergence]{computeConvergence()}}
+
+\code{\link[=computeBlendingRatio]{computeBlendingRatio()}}
 }

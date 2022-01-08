@@ -8,7 +8,7 @@ computeSimulations(df)
 }
 \arguments{
 \item{df}{Data augmented with relevant predictors and default modeling
-weights (output of setDefaultModelingWeights())}
+weights (output of \code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}})}
 }
 \value{
 Original input, with simulated data appended
@@ -21,4 +21,9 @@ original data (mean and error estimates). This allows for generating a family
 of models and a distribution of imputed values for each missing estimate,
 rather than a single point estimate. This distribution can be used to
 calculate a confidence level for each imputed value.
+}
+\seealso{
+\code{\link[=stdErrMC]{stdErrMC()}}
+
+\code{\link[=setDefaultModelingWeights]{setDefaultModelingWeights()}}
 }

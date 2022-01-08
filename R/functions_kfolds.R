@@ -2,19 +2,19 @@
 
 #' K-folds CV, with Smart Guessing
 #'
-#' Function to do k-folds cross validation in an iterative fashion. The first 
-#' prediction (Iteration 0) is the result of the smart guessing procedure. All
-#' subsequent iterations rely on XGBoost to produce preliminary predictions. 
-#' These predictions are then adjusted to adhere to boundary conditions on the 
-#' data (all estimates must be in the range \[0,1\], and the sum of all estimates
-#' within an occupational group must be <=1).
+#' Function to do k-folds cross validation in an iterative fashion, for the 
+#' purposes of model tuning. The first prediction (Iteration 0) is the result of 
+#' the smart guessing procedure. All subsequent iterations rely on XGBoost to 
+#' produce preliminary predictions. These predictions are then adjusted to 
+#' adhere to boundary conditions on the data (all estimates must be in the range 
+#' \[0,1\], and the sum of all estimates within an occupational group must be <=1).
 #'
 #' @param ors.data Original data augmented with relevant predictors, i.e. all 
 #' records, including both known and missing estimates (output of 
-#' setDefaultModelingWeights(), or computeSimulations())
+#' [setDefaultModelingWeights()], or [computeSimulations()])
 #' @param n.iter Number of times to iterate/adjust the model
 #' @param weight.step Increment by which to increase modeling weight of test 
-#' fold data with each iteration
+#' fold and missing data with each iteration
 #' @param mdl.d Tree model maximum depth; default is 14
 #' @param mdl.n Tree model rounds; default is 200
 #' @param mdl.e Tree model eta; default is 0.6
@@ -24,6 +24,13 @@
 #' "upSOC3", or "upSOC4"
 #' @return A list of length two, containing a list of hold out indices for each
 #' test fold, and the results of iterative modeling
+#' @seealso [setDefaultModelingWeights()]
+#' @seealso [computeSimulations()]
+#' @seealso [smartGuess()]
+#' @seealso [xgboost::xgboost()]
+#' @seealso [caret::createFolds()]
+#' @seealso [doParallel::registerDoParallel()]
+#' @seealso [parallel::makeCluster()]
 #' @export
 iterateModelKFCV <- function(ors.data,n.iter,weight.step,
                              mdl.d=14,mdl.n=200,mdl.e=0.6,
@@ -197,18 +204,19 @@ iterateModelKFCV <- function(ors.data,n.iter,weight.step,
 }
 
 
-#' Collate predictions for all 10 test folds, for each iteration
+#' Collate predictions for all 10 test folds from k-folds CV, for each iteration
 #' 
 #' Takes the results of a k-folds CV run and collates all the test fold data. 
 #' In the KFCV analysis, each of 10 folds is treated as the test fold, and a 
 #' model is generated and iterated over each of these test folds. The
 #' predictions resulting from each test fold are combined for each iteration,
-#' such that there is a complete predicted dataset (all records) obtained from
-#' each iteration. Recall that Iteration 0 is simply the output of smart
+#' such that there is a complete predicted dataset (all known records) obtained 
+#' from each iteration. Recall that Iteration 0 is simply the output of smart
 #' guessing (no modeling involved).
 #'
-#' @param model.results Modeling results (output of iterateModelKFCVwSG())
+#' @param model.results Modeling results (output of [iterateModelKFCV()])
 #' @return Collated predictions of each test fold, by iteration
+#' @seealso [iterateModelKFCV()]
 #' @export
 getTestFoldData <- function(model.results) {
   model.iterations <- model.results$model.iterations
@@ -248,13 +256,13 @@ getTestFoldData <- function(model.results) {
 }
 
 
-#' Compute convergence iteration
+#' Compute convergence iteration of k-folds CV models
 #'
 #' For a set of iterative k-folds modeling results, it is necessary to determine
 #' the convergence point of the model. This function computes this using the 
 #' RMSE of iterated predictions vs. the actual known values (this can be 
-#' accomplished because the k-folds procedure relies on known estimates only,
-#' and simulates missing estimates from the known set).
+#' accomplished because the k-folds procedure creates mock missing data from the 
+#' set of known estimates, so their true values are known quantities).
 #' 
 #' We defined convergence as when the difference between the RMSE of consecutive
 #' iterations was < 0.001. If this convergence criteria is not met, the function
@@ -262,11 +270,14 @@ getTestFoldData <- function(model.results) {
 #' was not reached). Recall that Iteration 0 is simply the output of smart 
 #' guessing (no modeling involved).
 #'
-#' @param test.fold.data Test fold predictions (output of getTestFoldData())
+#' @param test.fold.data Test fold predictions (output of [getTestFoldData()])
 #' @param verbose Should messages be printed; default is TRUE (print messages)
 #' @param show.plot Should plot of RMSE by iteration be displayed; default is 
 #' TRUE (display plot)
 #' @return Convergence iteration of k-folds cross validation modeling
+#' @seealso [iterateModelKFCV()]
+#' @seealso [getTestFoldData()]
+#' @seealso [ModelMetrics::rmse()]
 #' @export
 computeConvergence <- function(test.fold.data,verbose=TRUE,show.plot=TRUE) {
   
@@ -304,14 +315,14 @@ computeConvergence <- function(test.fold.data,verbose=TRUE,show.plot=TRUE) {
 }
 
 
-#' Plot predicted vs. actual values
+#' Plot predicted vs. actual values from k-folds CV results
 #'
 #' For each iteration, plot the predicted values vs. actual values of 
 #' observations in test folds. Recall that Iteration 0 is simply the output of 
 #' smart guessing (no modeling involved). Note that n.iter=10 will plot 
 #' Iterations 0-10, for a total of 11 iterations.
 #'
-#' @param test.fold.data Test fold predictions (output of getTestFoldData())
+#' @param test.fold.data Test fold predictions (output of [getTestFoldData()])
 #' @param plot.alpha Alpha (transparency) to use for points; default is 0.1
 #' @param n.iter How many iterations are to be plotted; default is to plot all
 #' iterations, including Iteration 0 (smart guessing)
@@ -326,6 +337,8 @@ computeConvergence <- function(test.fold.data,verbose=TRUE,show.plot=TRUE) {
 #' (create plot file)
 #' @return Returns a list of plot objects, with one object for each iteration; 
 #' optionally produces a plot (.png file) of all iterations
+#' @seealso [iterateModelKFCV()]
+#' @seealso [getTestFoldData()]
 #' @export
 plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.data)-4),
                           reqcat.palette=c("palevioletred1","black","yellow","cyan"),
@@ -372,36 +385,41 @@ plotTestFolds <- function(test.fold.data,plot.alpha=0.1,n.iter=(ncol(test.fold.d
 }
 
 
-#' Compute model blending ratio
+#' Compute model blending ratio from k-folds CV results
 #'
 #' Our procedure involves running the model twice over. In the first run, the
 #' initial smart guesses were computed based on separating the data based on
 #' their SOC2 codes. In the second run, the same was done using the SOC3 codes
 #' instead. This function computes a blending ratio, i.e. the contribution of
 #' each model to our final predictions. This is done by determining the 
-#' convergence iteration of each model, then computing a weighted average of the
-#' relevant predictions in steps of 0.01, e.g. 0.01(run1) + 0.99*(run2). The 
-#' RMSE of these prediction weighted averages were then calculated. The weighted
-#' average that resulted in the lowest RMSE was selected to determine the
-#' blending ratio. For example, if the prediction weighted average of 0.45(run1) + 
-#' 0.55(run2) yielded the lowest RMSE, then the blending ratio would be 45:55.
+#' convergence iteration of each model from the KFCV stage of analysis, then 
+#' computing a weighted average of the relevant predictions in steps of 0.01, 
+#' e.g. 0.01(run1) + 0.99*(run2). The RMSE of these prediction weighted averages 
+#' were then calculated. The weighted average that resulted in the lowest RMSE 
+#' was selected to determine the blending ratio. For example, if the prediction 
+#' weighted average of 0.45(run1) + 0.55(run2) yielded the lowest RMSE, then the 
+#' blending ratio would be 45:55. 
 #' 
 #' Note that we specify models based on SOC2 and SOC3 smart guesses to provide a
-#' concrete example. In reality, the two models are not limited to this specific
-#' combination.
+#' concrete example. In reality, the two models (run1 and run 2) are not limited 
+#' to this specific combination.
 #'
 #' @param model.results.soc2 Modeling results of SOC2 smart guessed data (output
-#' of iterateModelKFCVwSG())
+#' of [iterateModelKFCV()])
 #' @param model.results.soc3 Modeling results of SOC3 smart guessed data (output
-#' of iterateModelKFCVwSG())
+#' of [iterateModelKFCV()])
 #' @param print.plot Should plot file (.png) be generated; default is TRUE
 #' (create plot file)
 #' @return A list of length six, containing the convergence iterations of
 #' model.results.soc2 and model.results.soc3, the contributions of 
 #' model.results.soc2 and model.results.soc3 (as proportions), the blended
-#' predictions of each iteration (which can be fed to plotTestFolds()), and a 
+#' predictions of each iteration (which can be fed to [plotTestFolds()]), and a 
 #' plot object of the RMSE of blended predictions at convergence; optionally 
 #' produces a plot (.png file) of RMSE of blended predictions at convergence
+#' @seealso [iterateModelKFCV()]
+#' @seealso [getTestFoldData()]
+#' @seealso [computeConvergence()]
+#' @seealso [ModelMetrics::rmse()]
 #' @export
 computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plot=TRUE) {
   # Get aggregated test fold data
@@ -466,21 +484,3 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
 }
 
 
-
-# Determine neighbor counts
-# neighbors <- vector()
-# for (i in levels(iter4$upSOC3)) {
-#   for (j in levels(iter4$characteristic)) {
-#     x.temp <- nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & 
-#                            (iter4$data_type_text=="CONSTANTLY" |
-#                               iter4$data_type_text=="FREQUENTLY" |
-#                               iter4$data_type_text=="OCCASIONALLY" |
-#                               iter4$data_type_text=="SELDOM" |
-#                               iter4$data_type_text=="NOT PRESENT"),])
-#     if (x.temp!=0) {
-#       neighbors <- c(neighbors,
-#                      nrow(iter4[iter4$upSOC3==i & iter4$characteristic==j & iter4$data_type_text=="CONSTANTLY",]))
-#     }
-#   }
-# }
-# rm(x.temp)

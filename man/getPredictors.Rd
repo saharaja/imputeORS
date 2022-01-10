@@ -40,5 +40,5 @@ estimates is added.
 \seealso{
 \code{\link[=errorsAndBounding]{errorsAndBounding()}}
 
-\strong{predictors.data} for data mapping
+\link{predictors.data} for data mapping
 }

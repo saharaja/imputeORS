@@ -527,6 +527,7 @@ computeMeanPredictions <- function(model.results,iteration,ors.data.sims) {
 #' known estimates, this is simply the actual value)
 #' @seealso [computeSimulations()]
 #' @seealso [iterateModel()]
+#' @seealso [computeMeanPredictions()]
 #' @seealso [computeConvergence()]
 #' @seealso [computeBlendingRatio()]
 #' @export

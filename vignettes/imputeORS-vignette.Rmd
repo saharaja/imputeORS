@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The imputeORS package provides to tools to impute missing values in the Occupational Requirements Survey (ORS) administered by the U.S. Bureau of Labor Statistics (BLS). It uses an iterative, machine learning based approach. The package contains functions to retrieve, process, and analyze the data, and produces useful visualizations of both the iterative process and the final imputed results. In this vignette, we go through the full analysis stream for a subset of the data.
+The `imputeORS` package provides to tools to impute missing values in the Occupational Requirements Survey (ORS) administered by the U.S. Bureau of Labor Statistics (BLS). It uses an iterative, machine learning based approach. The package contains functions to retrieve, process, and analyze the data, and produces useful visualizations of both the iterative process and the final imputed results. In this vignette, we go through the full analysis stream for a subset of the data.
 
 
 
@@ -51,7 +51,7 @@ library(RColorBrewer)
 library(ComplexHeatmap)
 library(kableExtra)
 library(knitr)
-load("../data/estim_ssa_output_2018.Rdata")
+load("../data/ors.from.csv.Rdata")
 ors.from.csv[c(751,3000,10001,50000,65001,70000),c(6,7,9,10:16)]
 ```
 

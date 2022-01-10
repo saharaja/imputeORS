@@ -60,6 +60,8 @@ blended results constitute the final imputations for the missing values.
 
 \code{\link[=iterateModel]{iterateModel()}}
 
+\code{\link[=computeMeanPredictions]{computeMeanPredictions()}}
+
 \code{\link[=computeConvergence]{computeConvergence()}}
 
 \code{\link[=computeBlendingRatio]{computeBlendingRatio()}}

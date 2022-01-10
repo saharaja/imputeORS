@@ -21,10 +21,10 @@
 #'   \item{subcell_text}{exclusively "All Workers" data}
 #'   \item{data_element_text}{describes requirement}
 #'   \item{data_type_text}{describes requirement level}
-#'   \item{estimate_type_text}{describes the metric [[value]] represents (mean, 
+#'   \item{estimate_type_text}{describes the metric *value* represents (mean, 
 #'   mode, percent, or percentile)}
-#'   \item{estimate_type}{is [[value]] a mean or a standard error?}
-#'   \item{unit_of_measure}{describes units of [[value]] (days, hours, percent 
+#'   \item{estimate_type}{is *value* a mean or a standard error?}
+#'   \item{unit_of_measure}{describes units of *value* (days, hours, percent 
 #'   of day, percentage, or pounds)}
 #'   \item{reference_group}{code specifying reference group}
 #'   \item{additive_group}{code specifying additive group}

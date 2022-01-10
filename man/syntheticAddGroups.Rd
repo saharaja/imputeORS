@@ -23,5 +23,5 @@ of SSA analysts, using reference_group numbers:
 (78) Sitting or standing/walking.
 }
 \seealso{
-\strong{ors.from.csv} for original data used in our analysis
+\link{ors.from.csv} for original data used in our analysis
 }

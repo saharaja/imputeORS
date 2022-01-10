@@ -473,6 +473,7 @@ computeBlendingRatio <- function(model.results.soc2,model.results.soc3,print.plo
   test.folds.blend <- cbind(test.folds.blend,
                             (soc2.prop*test.folds.soc2[,4:ncol(test.folds.soc2)] + 
                                soc3.prop*test.folds.soc3[rownames(test.folds.soc2),4:ncol(test.folds.soc3)]))
+  test.folds.blend$Convergence <- (test.folds2[,conv.iter.soc2] * soc2.prop) + (test.folds3[rownames(test.folds2),conv.iter.soc3] * soc3.prop)
   
   # Return data
   return(list(soc2.conv.iter=conv.iter[1],

@@ -31,7 +31,7 @@ getORS <- function(orsLink="https://www.bls.gov/ors/xlsx/2018_excel_output.xlsx"
 #' @param orsRaw Original data (read in from CSV file)
 #' @return Data edited for new additive groups, and containing only relevant
 #' records (mean and standard error estimates) and columns
-#' @seealso **ors.from.csv** for original data used in our analysis
+#' @seealso [ors.from.csv] for original data used in our analysis
 #' @export
 syntheticAddGroups <- function(orsRaw) {
   
@@ -480,7 +480,7 @@ errorsAndBounding <- function(orsE,orsMnGC) {
 #' @param orsMnGCe Data with errors and bounds (output of [errorsAndBounding()])
 #' @return Data augmented with relevant predictors
 #' @seealso [errorsAndBounding()]
-#' @seealso **predictors.data** for data mapping
+#' @seealso [predictors.data] for data mapping
 #' @export
 getPredictors <- function(orsMnGCe) {
   # Get mapping for data/predictors

@@ -299,69 +299,27 @@ getErrors <- function(orsC) {
 #' @seealso [getMeanEstimates()]
 #' @export
 fillNminusOneGroups <- function(orsMnC) {
-  yes.no <- droplevels(orsMnC[orsMnC$data_type_text=="YES" | orsMnC$data_type_text=="NO",])
-  
-  present.not <- droplevels(orsMnC[((orsMnC$data_type_text=="PRESENT" | 
-                                       orsMnC$data_type_text=="SELDOM" | 
-                                       orsMnC$data_type_text=="OCCASIONALLY" | 
-                                       orsMnC$data_type_text=="FREQUENTLY" | 
-                                       orsMnC$data_type_text=="CONSTANTLY" | 
-                                       orsMnC$data_type_text=="NOT PRESENT") & 
-                                      !is.na(orsMnC$additive_group)),])
-  
-  yn.addGroups <- unique(yes.no$additive_group)
-  yn.occupations <- unique(yes.no$occupation_text)
-  
-  pn.addGroups <- unique(present.not$additive_group)
-  pn.occupations <- unique(present.not$occupation_text)
-  
-  rm(yes.no)
-  rm(present.not)
-  
-  for (ag in yn.addGroups) {
-    for (oc in yn.occupations) {
-      est.sum <- sum(orsMnC[orsMnC$additive_group==ag & orsMnC$occupation_text==oc,"value"],na.rm=TRUE)
+  for (ag in unique(orsMnC$additive_group)) {
+    current.ag <- droplevels(orsMnC[orsMnC$additive_group==ag,])
+    
+    for (oc in unique(orsMnC$occupation_text)) {
+      est.sum <- sum(current.ag[current.ag$occupation_text==oc,"value"],na.rm=TRUE)
       
       if (est.sum>100) {   # takes care of those whose values sum to > 100 (usually bc of rounding error)
         next
       }
       
-      if (est.sum==0) {   # takes care of those with NA's or 0's for value (for both YES/NO)
-        next
+      if (est.sum==0) {   # takes care of those with NA's or 0's for <value> at all levels
+        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
+        if(length(to.replace)==1) {
+          orsMnC[to.replace,"value"] <- 100 - est.sum  # this will be 100
+        }
       }
       
       if (est.sum==100) {
         to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
         if (length(to.replace)>=1) {
           orsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0 
-        }
-      }
-      
-      if (est.sum<100) {
-        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
-        if(length(to.replace)==1) {
-          orsMnC[to.replace,"value"] <- 100 - est.sum
-        }
-      }
-    }
-  }
-  
-  for (ag in pn.addGroups) {
-    for (oc in pn.occupations) {
-      est.sum <- sum(orsMnC[orsMnC$additive_group==ag & orsMnC$occupation_text==oc,"value"],na.rm=TRUE)
-      
-      if (est.sum>100) {   # takes care of those whose values sum to > 100 (usually bc of rounding error)
-        next
-      }
-      
-      if (est.sum==0) {   # takes care of those with NA's or 0's for value (for all levels)
-        next
-      }
-      
-      if (est.sum==100) {
-        to.replace <- which(orsMnC$additive_group==ag & orsMnC$occupation_text==oc & is.na(orsMnC$value))
-        if (length(to.replace)>=1) {
-          orsMnC[to.replace,"value"] <- 100 - est.sum   # this will be 0
         }
       }
       

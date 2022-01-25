@@ -17,8 +17,7 @@ Description: This package provides to tools to impute missing
     based approach. The package contains functions to retrieve, process,
     and analyze the data, and produces useful visualizations of both the
     iterative process and the final imputed results.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: GPL (>= 3)
 Depends: 
     R (>= 2.10)
 Imports: 
@@ -49,4 +48,4 @@ VignetteBuilder:
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

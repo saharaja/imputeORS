@@ -20,15 +20,21 @@ The `imputeORS` package provides to tools to impute missing values in the Occupa
 
 Numerous types of data are captured in the ORS so we focus on the information we identified as relevant to our goal of imputing missing estimates for population distributions of occupational requirements. For any given observation, the relevant fields utilized from the ORS were as follows:
 
-- `upper_soc_code`: Numeric field | Classifies occupation using the [Standard Occupational Classification (SOC) system](https://www.bls.gov/ors/notices/2020/implementing-2018-soc.htm)
-- `occupation_text`: Character field | Descriptive text of occupation
-- `data_element_text`: Character field | Descriptive text of job requirement/demand 
-- `data_type_text`: Character field | Descriptive text of levels associated with any given requirement/demand
-- `estimate_type_text`: Character field | Describes type of measurement associated with observation (either "Estimate" or "Standard Error")
-- `estimate_type`: Character field | Further describes type of measurement associated with observation (our focus was on observations described as ``Percent")
-- `unit_of_measure`: Character field | Describes units of measurement associated with observation (our focus was on observations described as "Percentage")
-- `additive_group`: Numeric field | Exhibits one-to-one correspondence with `data_element_text` (i.e. requirement). Importantly, estimates of observations belonging to a given `occupation_text` within a specific `additive_group` should sum to 100%; we will refer to these distinct combinations of occupation and requirement as ***occupational groups*** moving forward
-- `value`: Numeric field | Measurement estimate (our focus was on percentage values describing mean distributions of requirements)
+Character fields:
+
+- `occupation_text`: Descriptive text of occupation
+- `data_element_text`: Descriptive text of job requirement/demand 
+- `data_type_text`: Descriptive text of levels associated with any given requirement/demand
+- `estimate_type_text`: Describes type of measurement associated with observation (either "Estimate" or "Standard Error")
+- `estimate_type`: Further describes type of measurement associated with observation (our focus was on observations described as ``Percent")
+- `unit_of_measure`: Describes units of measurement associated with observation (our focus was on observations described as "Percentage")
+
+
+Numeric fields:
+
+- `upper_soc_code`: Classifies occupation using the [Standard Occupational Classification (SOC) system](https://www.bls.gov/ors/notices/2020/implementing-2018-soc.htm)
+- `additive_group`: Exhibits one-to-one correspondence with `data_element_text` (i.e. requirement). Importantly, estimates of observations belonging to a given `occupation_text` within a specific `additive_group` should sum to 100%; we will refer to these distinct combinations of occupation and requirement as ***occupational groups*** moving forward
+- `value`: Measurement estimate (our focus was on percentage values describing mean distributions of requirements)
 
 
 # Preprocessing    
@@ -38,7 +44,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-The preprocessing stage, involves a number of steps, detailed below.
+The preprocessing stage involves a number of steps, detailed below.
 
 **Raw Data and Transform.** First, we obtain the raw data from the ORS website, and transform it into the format used by the package. We see a sample of this transformed data, below.
 
@@ -104,8 +110,9 @@ ors.data <- setDefaultModelingWeights(ors.data)
 
 Note that here we remove all observations associated with the `occupation_text` *All Workers*, and we would advise doing the same, because it is a summary measure of all occupations considered in the ORS. For the purposes of this vignette only, we consider just four of the 22 possible 2-digit SOC codes. We include Table \@ref(tab:soc2tab), listing the number of observations associated with each of the SOC2 codes retained. A guide to these codes can be found online at the [BLS website](https://www.bls.gov/soc/2018/major_groups.htm). We also provide a snapshot of the data.
 
-``` {r subset, cache=TRUE}
+``` {r subset, echo=c(1,3),cache=FALSE}
 ors.data <- droplevels(ors.data[-which(ors.data$occupation_text=="All Workers"),])
+#table(ors.data$known.val)
 ors.data <- droplevels(ors.data[which(ors.data$upSOC2 %in% c("11","13","15","19")),])
 ```
 
@@ -126,11 +133,11 @@ rm(temp)
 
 # Model Tuning
 
-Next, we run through an example of model tuning. Our approach broke this down into two stages: train-test, and k-folds cross validation. Both stages utilize an interative modeling approach. Model tuning is accomplished using only the known data (in order to generate "predictions," a subset of the data is thrown out at the beginning of each procedure).
+Next, we run through an example of model tuning. Our approach broke this down into two stages: train-test, and k-folds cross validation. Both stages utilize an interative modeling approach. In the train-test stage, model tuning is accomplished using only the known data. In order to mimic prediction, a subset of the data (test set) is thrown out at the beginning of the procedure to create mock missing data. In the k-folds stage, both the known and the missing data are used. The test fold is selected from the known data, creating mock missing data in the same manner as in the train-test stage.
 
 ## Train-test
 
-The train-test paradigm was used to determine the model parameters to use moving forward, specifically the parameters *nrounds*, *max_depth*, and *eta*. In practice, this procedure was run multiple times until we optimized the parameters. Here, we simply run it once with the final parameterization that was obtained. The data are first separated into train/test/validate sets, and then smart guessing followed by iterative model prediction is applied to the test set.
+The train-test paradigm was used to determine the model parameters to use moving forward, specifically the parameters *nrounds*, *max_depth*, and *eta*. In practice, this procedure was run multiple times until we optimized the parameters. Here, we simply run it once with the final parameterization that was obtained. The data are first separated into train/test/validate sets. Then, initial guesses are populated for the test set, followed by iterative model prediction.
 
 ```{r traintest, cache=TRUE,echo=TRUE,message=FALSE}
 model.results <- iterateModelTT(ors.data=ors.data,
@@ -140,11 +147,11 @@ model.results <- iterateModelTT(ors.data=ors.data,
 
 ## K-folds Cross Validation
 
-Next, we used k-folds cross validation (KFCV) to determine the *blending ratio* for our ensemble method. This approach first involved using the `smartGuess()` function to generate an initial prediction for the "missing" values, and then using an iterative modeling procedure to refine these predictions. The full process involved running the KFCV paradigm twice: once using SOC2 codes to guide smart guessing, and once using SOC3 codes. The results of these models were then blended using a ratio calculated from the convergence iterations of the individual models.
+Next, we use k-folds cross validation (KFCV) to determine the *blending ratio* for our ensemble method. This approach first uses the `smartGuess()` function to generate an initial prediction for the missing values (both actual and mock), and then using an iterative modeling procedure to refine these predictions. The full process involves running the KFCV paradigm twice: once using SOC2 codes to guide smart guessing, and once using SOC3 codes. The results of these models are then blended using a ratio calculated from the convergence iterations of the individual models.
 
-**K-folds Cross Validation Modeling.** During the modeling stage, the predictions are initialized using smart guessing and then refined in an iterative fashion that leverages XGBoost. Once this was done using both the SOC2 and the SOC3 codes to guide smart guessing, the data from each of the test folds from each prediction were collated to generate a "full" predicted dataset for each iteration. The results of this collation from the SOC2 model are shown below, with *Prediction0* corresponding to the output of the smart guess procedure, and all subsequent predictions corresponding to those generated by the iterative modeling process. Note that in these results, the first column *fold* indicates which fold a given observation belongs to, the second column *req.cat* indicates the requirement category of the given observation, and the third column *actual* gives the actual value of the estimate (before it was thrown out).
+**K-folds Cross Validation Modeling.** During the modeling stage, the predictions are initialized using smart guessing and then refined in an iterative fashion that leverages XGBoost. Once this was done using both the SOC2 and the SOC3 codes to guide smart guessing, the predictions for the test folds from each iteration are collated to generate a "full" predicted dataset for each iteration. A sample of the collation results from the SOC2 model are shown below, with *Prediction0* corresponding to the output of the smart guess procedure, and all subsequent predictions corresponding to those generated by the iterative modeling process. Note that in these results, the first column *fold* indicates which fold a given observation belongs to, the second column *req.cat* indicates the requirement category of the given observation, and the third column *actual* gives the actual value of the estimate (before it was thrown out).
 
-```{r kfcv1, cache=TRUE,echo=-1,message=FALSE,warning=FALSE}
+```{r kfcv1-soc3, cache=TRUE,echo=c(2,3),message=FALSE,warning=FALSE}
 library(doParallel)
 # Use SOC3 codes to guide smart guessing, and model
 soc3.mdl <- iterateModelKFCV(ors.data=ors.data,
@@ -152,14 +159,33 @@ soc3.mdl <- iterateModelKFCV(ors.data=ors.data,
                              mdl.d=14,mdl.n=200,mdl.e=0.6,
                              fold.list=NULL,sg.soc.code="upSOC3")
 
+# To save space so that vignette cache can be pushed to GitHub:
+for (iter in c(1:10)) {
+  for (fold in c(1:10)) {
+    soc3.mdl$model.iterations[[iter+1]][[fold]]$model <- NULL
+  }
+}
+```
+
+```{r kfcv1-soc2, cache=TRUE,echo=c(1:4),message=FALSE,warning=FALSE}
 # Use SOC2 codes to guide smart guessing, and model
-# Use the folds generated during the SOC3 phase
+# (Use the folds generated during the SOC3 phase)
 fl <- soc3.mdl$folds
 soc2.mdl <- iterateModelKFCV(ors.data=ors.data,
                              n.iter=10,weight.step=0.05,
                              mdl.d=14,mdl.n=200,mdl.e=0.6,
                              fold.list=fl,sg.soc.code="upSOC2")
 
+# To save space so that vignette cache can be pushed to GitHub:
+for (iter in c(1:10)) {
+  for (fold in c(1:10)) {
+    soc2.mdl$model.iterations[[iter+1]][[fold]]$model <- NULL
+  }
+}
+```
+
+
+```{r kfcv2, cache=FALSE,echo=TRUE,message=FALSE,warning=FALSE}
 # Get test fold data
 test.folds2 <- getTestFoldData(soc2.mdl)
 test.folds3 <- getTestFoldData(soc3.mdl)
@@ -167,33 +193,33 @@ head(test.folds2)
 ```
 
 **Model Convergence.** After running the models, we determine the iteration at which they converge. The predictions from this convergence iteration (calculated for both the SOC2 and SOC3 models) are eventually used to determine the *blending ratio* that will be used for the purposes of imputing missing values at a later step (see \@ref(impute-missing-values)). Convergence is defined as when the difference in root mean square error (RMSE) between consecutive predictions is < 0.001. Note that in this vignette, because we are only using a subset of the data, the models never meet this convergence criteria. In this situation, the last iteration is returned as the convergence iteration (iteration 10, for both models).
-```{r kfcv2, cache=TRUE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=4,fig.height=4,fig.cap="RMSE by iteration of SOC2 model."}
+```{r kfcv3-a, cache=FALSE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=4,fig.height=4,fig.cap="RMSE by iteration of SOC2 model."}
 computeConvergence(test.folds2)
 ```
 
-```{r kfcv3, cache=TRUE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=4,fig.height=4,fig.cap="RMSE by iteration of SOC3 model."}
+```{r kfcv3-b, cache=FALSE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=4,fig.height=4,fig.cap="RMSE by iteration of SOC3 model."}
 computeConvergence(test.folds3)
 ```
 
-**Determine Blending Ratio.** After determining the convergence iteration of each model, we then run an analysis to optimize the contribution of each model to the final prediction. The predictions from the two convergence iterations are blended in a ratio derived from minimizing the RMSE. From this analysis we arrived at a blending ratio of 46:54 (SOC2:SOC3). See below for the RMSE of predictions from each of the two analysis streams at the convergence iteration, as well as from the blended model. Figure \@ref(fig:blending) illustrates the blending ratio analysis. We report on this blended result in the next section. Importantly, this ensemble approach, and the ratio derived here, is also used throughout the remaining prediction steps, namely in \@ref(impute-missing-values).
-```{r kfcv4, cache=TRUE,echo=TRUE,message=FALSE,warning=FALSE,}
+**Determine Blending Ratio.** After determining the convergence iteration of each model, we then run an analysis to optimize the contribution of each model to the final prediction. The predictions from the two convergence iterations are blended in a ratio derived from minimizing the RMSE. From this analysis we arrived at a blending ratio of 51:49 (SOC2:SOC3). See below for the RMSE of predictions from each of the two analysis streams at the convergence iteration, as well as from the blended model. Figure \@ref(fig:blending) illustrates the blending ratio analysis. We report on this blended result in the next section. Importantly, this ensemble approach, and the ratio derived here, is also used throughout the remaining prediction steps, namely in \@ref(impute-missing-values).
+```{r kfcv4, cache=FALSE,echo=TRUE,message=FALSE,warning=FALSE,}
 blending.data <- computeBlendingRatio(soc2.mdl,soc3.mdl,print.plot=FALSE)
 
 blending.data$soc2.proportion
 blending.data$soc3.proportion
 
 rmse(test.folds2$actual,test.folds2$Prediction10)
-rmse(test.folds3$actual,test.folds2$Prediction10)
+rmse(test.folds3$actual,test.folds3$Prediction10)
 rmse(blending.data$test.folds.blended$actual,blending.data$test.folds.blended$Prediction10)
 ```
 
-```{r blending, cache=TRUE,echo=FALSE,fig.align='center',fig.width=6,fig.height=3.75,fig.cap="Calculation of model blending ratio. The predictions at the convergence iteration of each of the constituent models were combined in various ratios, and the RMSE of the resulting blended prediction was calculated. The ratio that minimized this RMSE was 46(SOC2):54(SOC3), represented by the red point on the plot."}
+```{r blending, cache=FALSE,echo=FALSE,fig.align='center',fig.width=6,fig.height=3.75,fig.cap="Calculation of model blending ratio. The predictions at the convergence iteration of each of the constituent models were combined in various ratios, and the RMSE of the resulting blended prediction was calculated. The ratio that minimized this RMSE was 51(SOC2):49(SOC3), represented by the red point on the plot."}
 blending.data$plot.blend
 ```
 
 **Final Ensemble and Plot of Iterative Process.** A visualization of the iterative process can be seen in Fig. \@ref(fig:kfcv5). This visualization uses the blended, ensemble data, calculated from the ratio derived in the previous section. The actual value versus prediction is plotted to show the progression from the initial smart guess to the (adjusted) prediction for the each iteration of the model. With each iteration, XGBoost is moving the predictions towards their actual values: predictions are swept toward the diagonal at each step. Note that the blue points, representing the SVP requirement category which contains the requirement with the highest number of possible observations (*Minimum education level*, with 9 levels), have the furthest to move and have the highest error. Keep in mind that because this vignette only addresses a subset of the data, the convergence to the actual values is less pronounced than would be with the full dataset.
 
-```{r kfcv5, cache=TRUE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=6,fig.height=16,fig.cap="Predicted estimates vs. their actual values by iteration. We can see a convergence of the predictions toward their actual values. Grey corresponds to ENV, yellow to PHY, and cyan to SVP."}
+```{r kfcv5, cache=FALSE,echo=TRUE,message=FALSE,warning=FALSE,fig.align='center',fig.width=6,fig.height=16,fig.cap="Predicted estimates vs. their actual values by iteration. We can see a convergence of the predictions toward their actual values. Grey corresponds to ENV, yellow to PHY, and cyan to SVP."}
 # Plot progression of (blended) predictions
 p23 <- plotTestFolds(blending.data$test.folds.blended,print.plot=FALSE)
 ggpubr::ggarrange(plotlist=p23,nrow=ceiling(length(p23)/2),ncol=2,labels="auto",legend="none")
@@ -203,11 +229,11 @@ ggpubr::ggarrange(plotlist=p23,nrow=ceiling(length(p23)/2),ncol=2,labels="auto",
 
 # Imputation
 
-Following model tuning, we address the original problem: imputation. This is carried out using the same iterative method utilized during tuning, however instead of operating on only the known data (and proxy missing data), it includes the actual missing data. Similar to the KFCV approach, the missing data is initialized with a prediction using smart guessing, and then XGBoost models are used to iteratively refine these predictions. However, it is important to capture some of the variability inherent in the data within the framework of imputation. To do this, we first create a set of *simulated* data, derived from the original known data. This is then used moving forward to generate a distribution of predictions for each the missing values, allowing for the calulation of confidence intervals rather than a single point estimate. The details of this procedure are demonstrated below.
+Following model tuning, we address the original problem: imputation. This is carried out using the same iterative method utilized during tuning, operating on both the known data and missing data. Here, however, there is no mock missing data. Similar to the KFCV approach, the (actual) missing data is initialized with a prediction using smart guessing, and then XGBoost models are used to iteratively refine these predictions. However, it is important to capture some of the variability inherent in the data within the framework of imputation. To do this, we first create a set of *simulated* data, derived from the original known data. This is then used moving forward to generate a distribution of predictions for each the missing values, allowing for the calulation of confidence intervals rather than a single point estimate. The details of this procedure are demonstrated below.
 
 ## Simulation (Data Uncertainty) {#simulation}
 
-Simulated data is drawn from a $\beta$ distribution using, for all known observations, the `value` field ($\mu$) for the mean and the `std.error` field ($\sigma_e$) as the standard deviation. The details of this calculation can be found in the [full paper](). As a result of this step, each known observation has, in addition to its original value, 10 simulated values associated with it, resulting in 10 simulated datasets.
+Simulated data is drawn from a $\beta$ distribution using, for all known observations, the `value` field ($\mu$) for the mean and the `std.error` field ($\sigma_e$) as the standard deviation. The details of this calculation can be found in the [full paper](https://arxiv.org/abs/2201.09811). As a result of this step, each known observation has, in addition to its original value, 10 simulated values associated with it, resulting in 10 simulated datasets.
 
 <!-- The standard deviation is a function of the number of observations and $\sigma_e$, but we do not know the number of observations. Trial and error of different choices to match $\sigma_e$ yielded problems as the upper bound value of the standard deviation, due to the bounded nature of the potential values, is a function of the mean value used in the $\beta$ distribution. This is described as follows: -->
 
@@ -235,15 +261,32 @@ ors.data.sims <- computeSimulations(ors.data)
 
 Recall that the known values are simulated 10 times, as per the procedure outlined in \@ref(simulation). The result of this is 10 distinct datasets (simulations) to perform imputation on. For each simulation, the data is first subjected to the smart guessing procedure. Then the full dataset (known and smart guessed estimates) is fed into an XGBoost fit, and the resulting model is used to predict the missing values. Note that, like in the KFCV step, two models are produced in this way: one using the SOC2 codes to guide smart guessing, and one using the SOC3 codes to do so. These models are then blended using the convergence iterations and the ratios computed in \@ref(k-folds-cross-validation). See code and output below for details.
 
-```{r impute, cache=TRUE,message=FALSE,warning=FALSE}
-# Iterative imputing
+```{r impute-soc2, cache=TRUE,echo=c(1:3),message=FALSE,warning=FALSE}
+# Iterative imputing for SOC2 model
 impute.soc2 <- iterateModel(ors.data.sims=ors.data.sims,n.iter=10,
                               weight.step=0.05,sg.soc.code="upSOC2")
 
+for (sim in c(1:10)) {
+  for (iter in c(1:10)) {
+    impute.soc2[[sim]][[iter+1]]$model <- NULL
+  }
+}
+```
+
+```{r impute-soc3, cache=TRUE,echo=c(1:3),message=FALSE,warning=FALSE}
+# Iterative imputing for SOC3 model
 impute.soc3 <- iterateModel(ors.data.sims=ors.data.sims,n.iter=10,
                               weight.step=0.05,sg.soc.code="upSOC3")
 
-# Blend models using 
+for (sim in c(1:10)) {
+  for (iter in c(1:10)) {
+    impute.soc3[[sim]][[iter+1]]$model <- NULL
+  }
+}
+```
+
+```{r impute-blend, cache=FALSE,message=FALSE,warning=FALSE}
+# Blend models using KFCV results
 blended.model <- blendImputations(model.results.soc2=impute.soc2,
                                   model.results.soc3=impute.soc3,
                                   conv.iter.soc2=blending.data$soc2.conv.iter, 
@@ -257,14 +300,14 @@ blended.model <- blendImputations(model.results.soc2=impute.soc2,
 
 After imputing over each of the simulations, we arrive at a distribution of 10 predictions per missing value. This allows us to calculate a mean prediction and its relevant 95% confidence interval for each of the missing values, a result which is more useful than a single point estimate. In Table \@ref(tab:CItab) we provide a sample of these calculated confidence intervals (and associated mean predictions).
 
-```{r CI, cache=TRUE,message=FALSE,warning=FALSE,error=FALSE,results='hide'}
+```{r CI, cache=FALSE,message=FALSE,warning=FALSE,error=FALSE,results='hide'}
 model.CIs <- computeCIs(blended.model)
 
 CIs <- model.CIs$CIs
 CIs <- cbind(ors.data.sims[rownames(CIs),c("occupation_text","data_element_text","data_type_text")],CIs)
 ```
 
-```{r CI.table, cache=TRUE,echo=FALSE,message=FALSE,warning=FALSE,results='asis'}
+```{r CI.table, cache=FALSE,echo=FALSE,message=FALSE,warning=FALSE,results='asis'}
 knitr::kable(CIs[seq(1,nrow(CIs),floor(nrow(CIs)/25)),c(1:3,6,4,5)],
              col.names=c("Occupation","Requirement","Requirement level","Mean prediction","CI (lower)","CI (upper)"),
              row.names=FALSE,label="CItab",format="html",longtable=T,booktabs=T,
@@ -275,10 +318,10 @@ knitr::kable(CIs[seq(1,nrow(CIs),floor(nrow(CIs)/25)),c(1:3,6,4,5)],
 
 ## Model Uncertainty
 
-Uncertainty in the data itself is captured using the simulation technique describe above. However, the models themselves are also a source of uncertainty. We note that during imputation, not only are the missing values predicted, but also the known ones. With each iteration, the known observations are reset to their actual values prior to predicting in the subsequent iteration, but the original predictions are used to try and roughly quantify the uncertainty contributed by the models. To do so, we calculate both the mean absolute error (MAE) and the mean error (ME) between the actual values of known observations and the predictions generated by the model. This is done for each of the 10 simulations. At convergence (iteration 10 for all 10 simulations), the average (mean) MAE across all 10 simulation is 0.00188862, and the average ME is 7.889324e-05.
+Uncertainty in the data itself is captured using the simulation technique describe above. However, the models themselves are also a source of uncertainty. We note that during imputation, not only are the missing values predicted, but also the known ones. With each iteration, the known observations are reset to their actual values prior to predicting in the subsequent iteration, but the original predictions are used to try and roughly quantify the uncertainty contributed by the models. To do so, we calculate both the mean absolute error (MAE) and the mean error (ME) between the actual values of known observations and the predictions generated by the model. This is done for each of the 10 simulations. At convergence (iteration 10 for all 10 simulations), the average (mean) MAE across all 10 simulation is 0.001934767, and the average ME is 6.421957e-05.
 
-```{r mdl-uncert, cache=TRUE,message=FALSE,warning=FALSE}
-model.uncert <- computeModelUncertainty(impute.soc2,impute.soc3,10,10,0.46,0.54)
+```{r mdl-uncert, cache=FALSE,message=FALSE,warning=FALSE}
+model.uncert <- computeModelUncertainty(impute.soc2,impute.soc3,10,10,0.51,0.49)
 model.uncert$avg.mae
 model.uncert$avg.me
 
@@ -296,11 +339,11 @@ The "Expected Level of Effort” (ELE) is a measure we derived to compare occupa
 For each occupational group, ELE as an expected value $E$ of frequency times intensity as follows, where $\mu_j$ is the mean population prediction across all 10 simulations for the $j^{th}$ observation, and $F_j$ and $I_j$ are the frequency and intensity of the $j^{th}$ observation, respectively:
 
 $$E=\sum_j{\mu_j*F_j*I_j}$$
-``` {r ELE, cache=TRUE}
+``` {r ELE, cache=FALSE}
 expected.vals <- computeEVs(blended.model)
 ```
 
-This measure can be used in a correlation calculation across occupations, as in Fig. \@ref(fig:htmp), below. Further, it can be used to assess job similarity between different occupations (see \@ref(standardized-ele) for more details). ELE can also be applied to improving survey design, but this is beyond the scope of this vignette (see [full paper]() for further details).
+This measure can be used in a correlation calculation across occupations, as in Fig. \@ref(fig:htmp), below. Further, it can be used to assess job similarity between different occupations (see \@ref(standardized-ele) for more details). ELE can also be applied to improving survey design, but this is beyond the scope of this vignette (see [full paper](https://arxiv.org/abs/2201.09811) for further details).
 
 ```{r htmp, echo=TRUE,fig.align='center',fig.cap="Heatmap of occupational correlation of ELE, organized by 2-digit SOC code. Intra-group correlation (major diagonal) is generally higher than inter-group correlation."}
 htmp <- correlationPlot(blended.model,plot.dim=3,print.plot=FALSE)
@@ -319,7 +362,7 @@ If $\omega_{1ir}$ is the population mean of the $i^{th}$ level of the $r^{th}$ r
 
 $$O_r = \sum_{i}^{} \omega_{1ir}*\omega_{2ir}$$
 We demonstrate three overlap comparisons below, visualized in Fig. \@ref(fig:overlap-omega1) - \@ref(fig:overlap-omega3).
-```{r overlap-omega, cache=TRUE,warning=FALSE,echo=TRUE}
+```{r overlap-omega, cache=FALSE,warning=FALSE,echo=TRUE}
 job.ovrlp1 <- computeOverlap(blended.model,"Accountants","Web Developers")
 job.ovrlp2 <- computeOverlap(blended.model,"Accountants","Actuaries")
 job.ovrlp3 <- computeOverlap(blended.model,"Accountants","Chemists")
@@ -340,17 +383,23 @@ include_graphics("overlap_Accountants-v-Chemists.png")
 
 ### Standardized ELE
 
-Previously, in \@ref(expected-level-of-effort), we established a metric by which occupations could be compared across requirements in a correlation analysis. Standardizing the ELEs also allows for comparing job similarity, specifically by taking the difference in standardized ELEs between two occupations. Below are three figures demonstrating the differences between standardized expected values by occupation. Specifically, we visualize the same three pairs that were addressed in the overlap analysis, namely *Accountants* vs. *Web Developers* (Fig. \@ref(fig:overlap-ele1)), *Accountants* vs. *Actuaries* (Fig. \@ref(fig:overlap-ele2)), and *Accountants* vs. *Chemists* (Fig. \@ref(fig:overlap-ele3)).
+Previously, in \@ref(expected-level-of-effort), we established a metric by which occupations could be compared across requirements in a correlation analysis. In Fig. \@ref(fig:stdELEplot), we standardize these expected values and plot their distributions by requirement. On the far right we have aggregated all the additive groups corresponding to the requirement *Lifting/Carrying* (24, 25, 26, and 27) into a single distribution labeled LC. The same was done for *Reaching* (additive groups 16 and 18), labeled R.
 
-```{r stdELE, cache=TRUE,echo=TRUE}
+```{r stdELE, cache=FALSE,echo=TRUE}
 # Standardize EVs
-std.EVs <- standardizeEVs(blended.model,print.plot=FALSE)
+std.EVs <- standardizeEVs(blended.model)
 
 # Differences in standardized EVs
 stdEV.diff1 <- computeStdEVdiff(blended.model,"Accountants","Web Developers")
 stdEV.diff2 <- computeStdEVdiff(blended.model,"Accountants","Actuaries")
 stdEV.diff3 <- computeStdEVdiff(blended.model,"Accountants","Chemists")
 ```
+
+```{r stdELEplot, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Boxplot of ELEs, standardized by additive group (requirement). Red points indicate standardized μE ’s (i.e., 0), and blue points indicate outliers. Requirements where μE and the median do not align are indicative of skew in the expected values."}
+include_graphics("std-EV-by-req.png")
+```
+
+We note that these standardized ELEs provide another avenue for comparing job similarity, specifically by taking the difference in standardized ELEs between two occupations. Below are three figures demonstrating the differences between standardized expected values by occupation. Specifically, we visualize the same three pairs that were addressed in the overlap analysis, namely *Accountants* vs. *Web Developers* (Fig. \@ref(fig:overlap-ele1)), *Accountants* vs. *Actuaries* (Fig. \@ref(fig:overlap-ele2)), and *Accountants* vs. *Chemists* (Fig. \@ref(fig:overlap-ele3)).
 
 ```{r overlap-ele1, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Difference in standardized ELEs between Accountants and Web Developers."}
 include_graphics("stdEVdiff_Accountants-v-Web Developers.png")
@@ -363,3 +412,12 @@ include_graphics("stdEVdiff_Accountants-v-Actuaries.png")
 ```{r overlap-ele3, echo=FALSE,fig.align='center',out.width="75%",fig.cap="Difference in standardized ELEs between Accountants and Chemists."}
 include_graphics("stdEVdiff_Accountants-v-Chemists.png")
 ```
+
+
+# Summary
+
+In this vignette we demonstrate the use of the `imputeORS` package, a collection of methods by which to impute values for missing estimates within the Occupational Requirements Survey, administered by the U.S. Bureau of Labor Statistics. Our method leverages many of the inherent features of the data to arrive at a distribution of predictions. These features include the bounded nature of the data (all observations must be on the interval [0, 1]), negative correlation within an occupational group (percentages that must sum to 100%), quantified errors of known observations, and similarity between different occupations within a 2- or 3-digit SOC group.
+
+We use known errors to generate 10 simulations of the known estimates in order to generate a distribution of predictions, which allows us to ultimately compute confidence levels for our imputations rather than single point estimates. We then utilize an iterative approach using XGBoost to generate our predictions for each simulation, iterating the models until they reached convergence. The predictions from the convergence iteration of each simulation are used to calculate a mean prediction and its 95% confidence interval.
+
+Finally, we demonstrate a number of applications of the imputed values. Further details of the methods and applications described in this vignette can be found in the [full paper](https://arxiv.org/abs/2201.09811). The full paper also describes a generalized, iterative imputation algorithm based on the procedures implemented in the `imputeORS` package.

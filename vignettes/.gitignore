@@ -1,3 +1,4 @@
-#*.html
+*.html
 *.R
-imputeORS-vignette_cache/
+overlap*.png
+std*.png
